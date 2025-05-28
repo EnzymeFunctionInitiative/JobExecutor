@@ -1,17 +1,14 @@
 
-from typing import Tuple, List, Dict, Any
+from typing import Dict, Any
 
 import sqlalchemy
-from sqlalchemy import URL, create_engine, Column, Integer, String, DateTime, Enum, func, select
-from sqlalchemy.orm import Session, sessionmaker, DeclarativeBase, mapped_column, Mapped
-from sqlalchemy.types import TypeDecorator
+from sqlalchemy import URL, create_engine, select
+from sqlalchemy.orm import Session, sessionmaker
 
 from constants import Status
 from jobModels.job_orm import Base, Job
 from configClasses.baseConfig import BaseConfig
 
-# giving an example of a data strategy, only made complex by creating Job class
-# objects to mirror behavior from SQLAlchemy ORM database Job class objects
 class SQLStrategy(BaseDataStrategy):
     """ for dummy testing """ 
     def __init__(self, config: BaseConfig):
@@ -99,6 +96,8 @@ class SQLStrategy(BaseDataStrategy):
         db_url = URL.create(**url_dict)
         return db_url
 
+    ############################################################################
+    # interface methods
     def load_data(self):
         """ 
         Establish a connection to the database
@@ -113,7 +112,7 @@ class SQLStrategy(BaseDataStrategy):
             self.session = self.Session()
             print(f"Connected to database: {self.db_url}")
             
-        # handle exceptions better
+        # NOTE handle exceptions better
         except Exception as e:
             print(f"Error connecting to database: {e}")
             raise
@@ -134,7 +133,7 @@ class SQLStrategy(BaseDataStrategy):
                 self.engine = None
                 print("Disconnected from database (engine disposed)")
             
-        # handle exceptions better
+        # NOTE handle exceptions better
         except Exception as e:
             print(f"Error disconnecting from database: {e}")
             raise
@@ -169,6 +168,7 @@ class SQLStrategy(BaseDataStrategy):
             # execute the query
             jobs = self.session.execute(statement)
             return jobs
+        # NOTE handle exceptions better
         except Exception as e:
             print(f"Error fetching unfinished jobs: {e}")
             raise
@@ -199,5 +199,6 @@ class SQLStrategy(BaseDataStrategy):
             setattr(job_obj, key, value)
         
         self.session.commit()
+    ############################################################################
 
 
