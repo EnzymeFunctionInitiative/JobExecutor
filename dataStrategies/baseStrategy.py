@@ -45,8 +45,7 @@ class DictOfDictStrategy(BaseDataStrategy):
     def __init__(self, config: BaseConfig):
         """ 
         Need an init for these strategies since the strategy obj will handle
-        all data context internally... 
-        Kinda goes against the strategy design pattern concept? 
+        all data context internally. 
         """
         self.data = None
         self.config = config.get_attribute("jobdb", {})
