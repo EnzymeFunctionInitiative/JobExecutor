@@ -21,7 +21,7 @@ def parse_input_arguments() -> argparse.Namespace:
     parser.add_argument("--mode","-m", required=True, help="Keyword to denote what job executor strategy/mode is to be used to gather unfinished jobs and perform some task for them.")
     parser.add_argument("--configuration-file","--conf", required=True, help="File path to the json- or INI-formatted config file specifying the access tokens/details for the job database and compute resources.")
     #parser.add_argument("--configuration-format","--conf-fmt", default = "ini", help="File format for the config file.")
-    parser.add_argument("--db-name","-db", required=True, help="string, either a file path to a local database or the name of the database accessed via information in `--configuration-file`")
+    #parser.add_argument("--db-name","-db", required=True, help="string, either a file path to a local database or the name of the database accessed via information in `--configuration-file`")
     args = parser.parse_args()
     # validation of input arguments happens here...
     return args

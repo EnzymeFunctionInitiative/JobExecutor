@@ -1,6 +1,7 @@
 {
     "jobdb": {
-	"dbi": "sqlite"
+	"dbi": "sqlite",
+	"db_name": "testing/testing.sqlite"
     },
     "compute": {
         "submit_command": "./",
