@@ -1,11 +1,9 @@
 
 import sqlalchemy
 
-from sqlalchemy import URL, create_engine, Column, Integer, String, DateTime, Enum, func, select
-from sqlalchemy.orm import Session, sessionmaker, DeclarativeBase, mapped_column, Mapped
+from sqlalchemy import String, DateTime, func
+from sqlalchemy.orm import DeclarativeBase, mapped_column, Mapped
 from sqlalchemy.types import TypeDecorator
-
-
 
 class FlagEnumType(TypeDecorator):
     """ 
@@ -70,7 +68,7 @@ class Job(Base):
     user_id: Mapped[int] = mapped_column(nullable=False)
     uuid: Mapped[str] = mapped_column(nullable=False)   # typing.UUID?
     #status: Mapped[str] = mapped_column(nullable=False)
-    status: Mapped[Status] = mapped_column(FlagEnumType(Status), nullable=False) # NOTE
+    status: Mapped[Status] = mapped_column(FlagEnumType(Status), nullable=False)
     efi_type: Mapped[str] = mapped_column("type", nullable=False)
     timeCreated: Mapped[datetime] = mapped_column(
         nullable=False, 
