@@ -4,7 +4,7 @@ Code to automate the submission of new EFI jobs on a compute machine, assuming
 the jobs' input parameters and statuses are contained in a database table (like
 the one created from the hosted website). 
 
-current version: 0.0.1, 2025-05-27, RBD
+current version: 0.0.1, 2025-05-28, RBD
 """
 
 import argparse
@@ -22,6 +22,9 @@ def parse_input_arguments() -> argparse.Namespace:
     parser.add_argument("--configuration-file","--conf", required=True, help="File path to the json- or INI-formatted config file specifying the access tokens/details for the job database and compute resources.")
     #parser.add_argument("--configuration-format","--conf-fmt", default = "ini", help="File format for the config file.")
     #parser.add_argument("--db-name","-db", required=True, help="string, either a file path to a local database or the name of the database accessed via information in `--configuration-file`")
+    parser.add_argument("--dry-run","-dry", action='store_true', help="Flag to prevent any commands from actually being run. Instead, the commands will be printed.")
+    parser.add_argument("--verbose","-v", action='store_true', help="Flag to increase verbosity.")
+    #parser.add_argument("--logging","-log", default = False, help="File path to a to-be-written log file within which all execution actions are recorded. Default: False (no logging).")
     args = parser.parse_args()
     # validation of input arguments happens here...
     return args
@@ -54,60 +57,4 @@ if __name__ == "__main__":
             retcode, updates = task_operator.execute(job, config)
             # update the job object with any new information
             data_handler.update_job(job, updates)
-
-
-
-
-
-
-
-
-
-
-
-
-#
-#    # SQLAlchemy expects a specific format for database paths/urls so create 
-#    # that.
-#    db_url = db_connector.create_db_url(config, args.db_name)
-#
-#    # create the database connection object
-#    job_db = db_connector.SQLAlchemyDatabase(db_url)
-#    job_db.connect()
-#
-#    # query the JobDB for rows with status values not equal to 
-#    # `Status.INCOMPLETE` 
-#    unfinished_jobs = job_db.fetch_jobs(Status.INCOMPLETE)
-#    
-#    # unfinished_jobs is a ChunkedIteratorResult object that can be iteratively
-#    # grabbed from until its empty. 
-#    while True:
-#        # grab the next row from the unfinished_jobs result; fetchone() and 
-#        # equivalent returns a sqlalchemy.engine.row.Row object that basically
-#        # functions like a tuple holding within it the db_connector.Job object 
-#        # that we want to perform tasks on.
-#        job = unfinished_jobs.fetchone()
-#        # if the fetch returned None, break out of the while loop
-#        if not job:
-#            break
-#
-#        print(f"\n{job}")
-#        
-#        # run the process_job() func on the db_connector.Job object to
-#        # determine which task needs to be performed and subsequently perform
-#        # that task. No updates to the Job object's attributes are done within
-#        # process_job(); those are all stashed in the `updates` dict and 
-#        # applied to the database via `job_db.update_job()` 
-#        retcode, updates = task_operator.process_job(job[0], config)
-#        
-#        # if a status change has occurred, commit it and any relevant info to 
-#        # the DB.
-#        if updates.get("status") != job[0].status:
-#            job_db.update_job(job[0], updates)
-#        
-#        print(f"{job}\n")
-#
-#    # close the connection
-#    job_db.disconnect()
-#
 
