@@ -25,9 +25,9 @@ class DataHandler:
         #elif config["jobdb"]["type"].lower() == "csv":
         #    module = importlib.import_module(f"dataStrategies.csvStrategy")
         #    return getattr(module,"CSVStrategy")
-        #elif config["jobdb"]["type"].lower() in ["sqlite","mysql"]:
-        #    module = importlib.import_module(f"dataStrategies.sqlStrategy")
-        #    strategy_obj = getattr(module,"SQLAlchemyStrategy")
+        elif config["jobdb"]["type"].lower() in ["sqlite","mysql"]:
+            module = importlib.import_module(f"dataStrategies.sqlStrategy")
+            strategy_obj = getattr(module,"SQLStrategy")
         else:
             raise NotImplementedError("Data handler strategy not implemented." 
                 + " Please set an appropriate value in the config file in" 
