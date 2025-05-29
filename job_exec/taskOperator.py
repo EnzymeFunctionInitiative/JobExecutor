@@ -26,7 +26,7 @@ class Operator:
     def check_mode(self):
         """ Kill the init if the given self.mode is not implemented. """
         # update this list as new modes are implemented
-        if self.mode not in ["dummy"]:
+        if self.mode not in ["dummy","mysql","sqlite"]:
             raise NotImplementedError("This mode is not implemented. Try" 
                 + "something different, like 'dummy'")
 

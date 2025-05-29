@@ -2,8 +2,8 @@
 import pytest
 
 from configClasses.baseConfig import BaseConfig
-from dataHandler import DataHandler
 from constants import Status
+from dataHandler import DataHandler
 
 import jobModels.job_plain as job_model
 import dataStrategies.baseStrategy as data_strategy
