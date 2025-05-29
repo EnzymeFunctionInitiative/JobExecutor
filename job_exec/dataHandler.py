@@ -6,7 +6,7 @@ from dataStrategies.baseStrategy import BaseDataStrategy
 from configClasses.baseConfig import BaseConfig
 
 class DataHandler:
-    def __init__(self, mode_str: str, config: BaseConfig):
+    def __init__(self, config: BaseConfig):
         """ 
         gets called when `with DataHandler(...) as data_handler` is run
 
@@ -18,14 +18,14 @@ class DataHandler:
         
         # determine which dataStrategies module to import and gather the 
         # relevant class
-        if (mode_str.lower() == "dummy" 
-                or config["jobdb"]["type"].lower() in ["dummy","dictofdict"]):
+        strategy_type = config.get_parameter("jobdb_dict","type").lower() 
+        if strategy_type in ["dummy","dictofdict"]:
             module = importlib.import_module(f"dataStrategies.baseStrategy")
             strategy_obj = getattr(module,"DictOfDictStrategy")
-        #elif config["jobdb"]["type"].lower() == "csv":
+        #elif strategy_type == "csv":
         #    module = importlib.import_module(f"dataStrategies.csvStrategy")
         #    return getattr(module,"CSVStrategy")
-        elif config["jobdb"]["type"].lower() in ["sqlite","mysql"]:
+        elif strategy_type in ["sqlite","mysql","sql"]:
             module = importlib.import_module(f"dataStrategies.sqlStrategy")
             strategy_obj = getattr(module,"SQLStrategy")
         else:

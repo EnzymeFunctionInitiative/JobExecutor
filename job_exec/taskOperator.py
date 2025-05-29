@@ -12,8 +12,8 @@ class Operator:
     """
     """
 
-    def __init__(self, mode: str) -> None:
-        self.mode = mode
+    def __init__(self, config: BaseConfig) -> None:
+        self.mode = config.get_parameter("compute_dict","type")
         self._strategy = None
 
         # ensure the given mode has actually been implemented
@@ -26,9 +26,9 @@ class Operator:
     def check_mode(self):
         """ Kill the init if the given self.mode is not implemented. """
         # update this list as new modes are implemented
-        if self.mode not in ["dummy","mysql","sqlite"]:
+        if self.mode not in ["dummy","mysql","sqlite","sql"]:
             raise NotImplementedError("This mode is not implemented. Try" 
-                + "something different, like 'dummy'")
+                + " something different, like 'dummy'")
 
     ############################################################################
     ## Strategy Design Pattern Handles
@@ -64,6 +64,7 @@ class Operator:
             self.CheckStatusStrategy = getattr(module, "CheckStatus")
             #self.TransferStrategy = getattr(module, "Transfer")
             #self.ArchiveStrategy = getattr(module, "Archive")
+            print(f"Using {module.__name__} as the source of task strategies.")
         except Exception as e:
             print(f"Importing the taskStrategies.{self.mode} submodule failed.\n {e}")
             raise

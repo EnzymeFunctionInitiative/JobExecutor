@@ -8,15 +8,15 @@ from sqlalchemy.orm import Session, sessionmaker
 from constants import Status
 from jobModels.job_orm import Base, Job
 from configClasses.baseConfig import BaseConfig
+from .baseStrategy import BaseDataStrategy
 
 class SQLStrategy(BaseDataStrategy):
-    """ for dummy testing """ 
     def __init__(self, config: BaseConfig):
         """ 
         Need an init for these strategies since the strategy obj will handle
         all data context internally. 
         """
-        self.config = config.get_attribute("jobdb", {})
+        self.config = config.get_attribute("jobdb_dict", {})
 
         self.db_url = self.create_db_url()
         
@@ -166,7 +166,7 @@ class SQLStrategy(BaseDataStrategy):
             # query string using the status_strings list
             statement = select(Job).where(Job.status.in_(status_strings))
             # execute the query
-            jobs = self.session.execute(statement)
+            jobs = [job[0] for job in self.session.execute(statement)]
             return jobs
         # NOTE handle exceptions better
         except Exception as e:
@@ -182,18 +182,18 @@ class SQLStrategy(BaseDataStrategy):
         ---------
             job_obj
                 Job, the ORM class to denote a row in table Job. 
-            updates_dict 
+            update_dict 
                 dict, keys map to Job attributes (column names) and associated
                 values are the new values to be updated to. 
         """
         if not self.session:
             raise Exception("Not connected to the database")
 
-        if not updates_dict:
+        if not update_dict:
             print(f"No updates applied to the Job ({job_obj.__repr__}).")
             return
 
-        for key, value in updates_dict.items():
+        for key, value in update_dict.items():
             if key not in self.updatable_attrs: 
                 continue
             setattr(job_obj, key, value)

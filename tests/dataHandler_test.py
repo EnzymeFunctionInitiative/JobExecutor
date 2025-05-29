@@ -12,18 +12,16 @@ import dataStrategies.baseStrategy as data_strategy
 
 test_data = [
     pytest.param(
-        "dummy", 
         "templates/dummy.config", 
         data_strategy.DictOfDictStrategy,
         job_model.Job,
     ), 
 ]
 @pytest.mark.parametrize(
-    "mode, config_file_path, data_strategy_type, job_type", 
+    "config_file_path, data_strategy_type, job_type", 
     test_data
 )
 def test_data_handler(
-        mode, 
         config_file_path,
         data_strategy_type,
         job_type):
@@ -34,7 +32,7 @@ def test_data_handler(
     else:
         config = BaseConfig.read_ini_config(config_file_path)
     # use the context management capability of the DataHandler class
-    with DataHandler(mode, config) as data_handler:
+    with DataHandler(config) as data_handler:
         assert type(data_handler._strategy) == data_strategy_type
         jobs = data_handler.get_jobs(Status.INCOMPLETE)
         for job in jobs:

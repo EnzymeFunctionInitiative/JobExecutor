@@ -18,13 +18,11 @@ def parse_input_arguments() -> argparse.Namespace:
     """
     """
     parser = argparse.ArgumentParser(description = "Create new jobs, keep tabs on queued jobs, and gather results.")
-    parser.add_argument("--mode","-m", required=True, help="Keyword to denote what job executor strategy/mode is to be used to gather unfinished jobs and perform some task for them.")
     parser.add_argument("--configuration-file","--conf", required=True, help="File path to the json- or INI-formatted config file specifying the access tokens/details for the job database and compute resources.")
     #parser.add_argument("--configuration-format","--conf-fmt", default = "ini", help="File format for the config file.")
-    #parser.add_argument("--db-name","-db", required=True, help="string, either a file path to a local database or the name of the database accessed via information in `--configuration-file`")
+    parser.add_argument("--logging","-log", default = False, help="File path to a to-be-written log file within which all execution actions are recorded. Default: False (no logging).")
+    parser.add_argument("--verbose","-v", action='store_true', help="Flag to increase verbosity in logging.")
     parser.add_argument("--dry-run","-dry", action='store_true', help="Flag to prevent any commands from actually being run. Instead, the commands will be printed.")
-    parser.add_argument("--verbose","-v", action='store_true', help="Flag to increase verbosity.")
-    #parser.add_argument("--logging","-log", default = False, help="File path to a to-be-written log file within which all execution actions are recorded. Default: False (no logging).")
     args = parser.parse_args()
     # validation of input arguments happens here...
     return args
@@ -32,9 +30,6 @@ def parse_input_arguments() -> argparse.Namespace:
 if __name__ == "__main__":
     # load input arguments for the job executor
     args = parse_input_arguments()
-
-    # Operator is the context object for the taskStrategies
-    task_operator = Operator(args.mode)
 
     # read the config file
     config = BaseConfig.read_ini_config(args.configuration_file)
@@ -47,8 +42,11 @@ if __name__ == "__main__":
     #    raise NotImplementedError("A configuration reader for" 
     #        + f" {args.configuration_file} format has not been implemented.")
 
+    # Operator is the context object for the taskStrategies
+    task_operator = Operator(config)
+
     # open a DataHandler using a with statement
-    with DataHandler(args.mode, config) as data_handler:
+    with DataHandler(config) as data_handler:
         # gather incomplete jobs
         jobs = data_handler.get_jobs(Status.INCOMPLETE)
         # loop over the iterator and handle each job individually 
