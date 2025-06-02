@@ -2,8 +2,9 @@
 from typing import Dict, Any
 import importlib
 
-from dataStrategies.baseStrategy import BaseDataStrategy
+from dataStrategies.baseStrategy import BaseDataStrategy, DictOfDictStrategy
 from configClasses.baseConfig import BaseConfig
+from dataStrategies.sqlStrategy import SQLStrategy
 
 class DataHandler:
     def __init__(self, config: BaseConfig):
@@ -37,14 +38,9 @@ class DataHandler:
                 + " Please set an appropriate value in the config file in" 
                 + " section 'jobdb', keyword 'type'.")
         elif self.strategy_type in ["dummy","dictofdict"]:
-            module = importlib.import_module(f"dataStrategies.baseStrategy")
-            return getattr(module,"DictOfDictStrategy")
-        #elif self.strategy_type == "csv":
-        #    module = importlib.import_module(f"dataStrategies.csvStrategy")
-        #    return getattr(module,"CSVStrategy")
+            return DictOfDictStrategy
         elif self.strategy_type in ["sqlite","mysql","sql"]:
-            module = importlib.import_module(f"dataStrategies.sqlStrategy")
-            return getattr(module,"SQLStrategy")
+            return SQLStrategy
 
     # Defining the interface to interact with the dataStrategies:
     # - enable context management via __enter__ and __exit__
