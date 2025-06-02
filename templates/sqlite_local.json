@@ -1,0 +1,22 @@
+{
+    "jobdb": {
+	"type": "SQL",
+	"dbi": "sqlite",
+	"db_name": "tests/implementation_tests/testing.sqlite"
+    },
+    "compute": {
+        "type": "local",
+        "submit_command": "./",
+	"check_queue_command": "",
+	"some_parameter": "",
+	"some_other_parameter": "",
+	"jobid": 1,
+	"some_other_info": "hello world",
+	"some_other_other_info": 42
+    },
+    "transportation": {
+	"command": "mv",
+	"to_destination_root": "",
+	"from_destination_root": ""
+    }
+}

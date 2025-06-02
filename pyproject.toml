@@ -1,0 +1,24 @@
+[project]
+name = "EFIJobExecutor"
+version = "0.0.1"
+authors = [
+  { name="Russell B. Davidson", email="rbdavid@illinois.edu" },
+  { name="Nils Oberg", email="noberg@illinois.edu" },
+]
+maintainers = [
+  { name="Russell B Davidson", email="rbdavid@illinois.edu" },
+]
+description = "Job Executor to manage EFI jobs"
+requires-python = ">=3.10"
+dependencies = ["configparser", "sqlalchemy", "jinja2", "pytest"]
+
+[project.urls]
+Repository = "https://github.com/EnzymeFunctionInitiative/JobExecutor"
+
+[build-system]
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"" = "job_exec"}
+
