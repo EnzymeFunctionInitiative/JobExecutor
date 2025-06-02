@@ -3,8 +3,6 @@
 Code to automate the submission of new EFI jobs on a compute machine, assuming
 the jobs' input parameters and statuses are contained in a database table (like
 the one created from the hosted website). 
-
-current version: 0.0.1, 2025-05-28, RBD
 """
 
 import argparse
