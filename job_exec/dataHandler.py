@@ -18,7 +18,7 @@ class DataHandler:
         self.strategy_type = config.get_parameter("jobdb_dict","type").lower() 
        
         # grab the class to be used as the dataStrategy
-        strategy_obj: BaseDataStrategy = get_strategy()
+        strategy_obj: BaseDataStrategy = self.get_strategy()
         print(f"Using {str(strategy_obj)} as the data handler strategy.")
 
         # assign self._strategy to an instance of the dataStrategy object

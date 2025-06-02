@@ -123,6 +123,8 @@ class SQLStrategy(BaseDataStrategy):
         pooling, so the connection is not explicitly closed here. Instead, 
         dispose of the session.
         """
+        # check that any changes get commit to the db before close is executed
+        self.session.commit()
         try:
             if self.session:
                 self.session.close()
@@ -142,7 +144,7 @@ class SQLStrategy(BaseDataStrategy):
             status: Status = Status.INCOMPLETE
             ) -> sqlalchemy.engine.ChunkedIteratorResult:
         """ 
-        Return an iterator containing Job objects associated with rows in the
+        Return a generator containing Job objects associated with rows in the
         SQL table that pass the status comparison.
 
         Arguments
@@ -166,8 +168,8 @@ class SQLStrategy(BaseDataStrategy):
             # query string using the status_strings list
             statement = select(Job).where(Job.status.in_(status_strings))
             # execute the query
-            jobs = [job[0] for job in self.session.execute(statement)]
-            return jobs
+            for job in self.session.execute(statement):
+                yield job[0]
         # NOTE handle exceptions better
         except Exception as e:
             print(f"Error fetching unfinished jobs: {e}")

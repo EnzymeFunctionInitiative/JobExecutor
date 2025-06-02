@@ -48,7 +48,7 @@ class DictOfDictStrategy(BaseDataStrategy):
         all data context internally. 
         """
         self.data = None
-        self.config = config.get_attribute("jobdb", {})
+        self.config = config.get_attribute("jobdb_dict", {})
         # assign any other attributes here based on config...
 
     def load_data(self):
@@ -74,10 +74,9 @@ class DictOfDictStrategy(BaseDataStrategy):
     def fetch_jobs(self, status: Status = Status.INCOMPLETE) -> List[Job]:
         """ 
         Fetch jobs from the dict of dict based on the associated status strings.
-        Return an iterator containing Job objects associated with keys in 
+        Return a generator containing Job objects associated with keys in 
         self.data that pass the status comparison. 
         """
-        iterator = []
         for key, subdict in self.data.items():
             # add the `"job_id": key` pair to the subdict
             subdict.update({"job_id": key})
@@ -86,9 +85,7 @@ class DictOfDictStrategy(BaseDataStrategy):
             temp_job = Job(**subdict)
             # key is equivalent to the primary key used in a SQL table
             if temp_job.status in status:
-                iterator.append(temp_job)
-        
-        return iterator
+                yield temp_job
 
     def update_job(self, job_obj: Job, update_dict: Dict[str, Any]): 
         """
