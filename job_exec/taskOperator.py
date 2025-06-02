@@ -9,9 +9,6 @@ from taskStrategies.baseStrategy import BaseStrategy
 from configClasses.baseConfig import BaseConfig
 
 class Operator:
-    """
-    """
-
     def __init__(self, config: BaseConfig) -> None:
         self.mode = config.get_parameter("compute_dict","type")
         self._strategy = None
@@ -24,39 +21,21 @@ class Operator:
         self.get_strategies()
         
     def check_mode(self):
-        """ Kill the init if the given self.mode is not implemented. """
-        # update this list as new modes are implemented
+        """ 
+        Kill the init if the given self.mode is not implemented. 
+
+        NOTE: need to update this list as new modes are implemented
+        """
         if self.mode not in ["dummy","mysql","sqlite","sql"]:
             raise NotImplementedError("This mode is not implemented. Try" 
                 + " something different, like 'dummy'")
-
-    ############################################################################
-    ## Strategy Design Pattern Handles
-    ## NOTE REMOVE PROPERTY AND JUST self._strategy = ...
-    #@property
-    #def strategy(self) -> BaseStrategy:
-    #    """
-    #    The Context maintains a reference to one of the Strategy objects. The
-    #    Context does not know the concrete class of a strategy. It should work
-    #    with all strategies via the Strategy interface.
-    #    """
-
-    #    return self._strategy
-
-
-    #@strategy.setter
-    #def strategy(self, strategy: BaseStrategy) -> None:
-    #    """
-    #    Usually, the Context allows replacing a Strategy object at runtime.
-    #    """
-
-    #    self._strategy = strategy
-
 
     def get_strategies(self):
         """
         The self.mode attribute is used to identify a submodule file from which
         the associated Strategies are imported and assigned to attributes.
+
+        NOTE: need to update this method if new tasks are implemented
         """
         try:
             module = importlib.import_module(f"taskStrategies.{self.mode}Strategy")

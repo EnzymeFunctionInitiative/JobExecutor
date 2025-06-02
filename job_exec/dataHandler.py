@@ -15,28 +15,36 @@ class DataHandler:
         Can't just call the strategy's underlying methods (like a rudimentary
         strategy design pattern would suggest). 
         """
+        self.strategy_type = config.get_parameter("jobdb_dict","type").lower() 
+       
+        # grab the class to be used as the dataStrategy
+        strategy_obj: BaseDataStrategy = get_strategy()
+        print(f"Using {str(strategy_obj)} as the data handler strategy.")
+
+        # assign self._strategy to an instance of the dataStrategy object
+        self._strategy: BaseDataStrategy = strategy_obj(config)
+
+    def get_strategy(self):
+        """
+        Use self.strategy_type to find, import, and return the specified data 
+        strategy to be used.
         
-        # determine which dataStrategies module to import and gather the 
-        # relevant class
-        strategy_type = config.get_parameter("jobdb_dict","type").lower() 
-        if strategy_type in ["dummy","dictofdict"]:
-            module = importlib.import_module(f"dataStrategies.baseStrategy")
-            strategy_obj = getattr(module,"DictOfDictStrategy")
-        #elif strategy_type == "csv":
-        #    module = importlib.import_module(f"dataStrategies.csvStrategy")
-        #    return getattr(module,"CSVStrategy")
-        elif strategy_type in ["sqlite","mysql","sql"]:
-            module = importlib.import_module(f"dataStrategies.sqlStrategy")
-            strategy_obj = getattr(module,"SQLStrategy")
-        else:
+        NOTE: update this method as new strategies are implemented
+        """
+        accepted_strategies = ["dummy","dictofdict","sqlite","mysql","sql"]
+        if self.strategy_type not in accepted_strategies:
             raise NotImplementedError("Data handler strategy not implemented." 
                 + " Please set an appropriate value in the config file in" 
                 + " section 'jobdb', keyword 'type'.")
-
-        print(f"Using {str(strategy_obj)} as the data handler strategy.")
-        
-        # assign self._strategy to an instance of the dataStrategy object
-        self._strategy: BaseDataStrategy = strategy_obj(config)
+        elif self.strategy_type in ["dummy","dictofdict"]:
+            module = importlib.import_module(f"dataStrategies.baseStrategy")
+            return getattr(module,"DictOfDictStrategy")
+        #elif self.strategy_type == "csv":
+        #    module = importlib.import_module(f"dataStrategies.csvStrategy")
+        #    return getattr(module,"CSVStrategy")
+        elif self.strategy_type in ["sqlite","mysql","sql"]:
+            module = importlib.import_module(f"dataStrategies.sqlStrategy")
+            return getattr(module,"SQLStrategy")
 
     # Defining the interface to interact with the dataStrategies:
     # - enable context management via __enter__ and __exit__
