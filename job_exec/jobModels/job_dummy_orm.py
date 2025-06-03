@@ -60,7 +60,9 @@ class Base(DeclarativeBase):
 
 class Job(Base):
     """
-    SQLAlchemy model for the 'Job' table.
+    SQLAlchemy model for a fake 'Job' table that kind of mirrors that of the 
+    real EFI Job table. This should only be used for dummy testing of the 
+    SQLAlchemy interface. 
     """
     __tablename__ = 'Job'
 
