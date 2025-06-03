@@ -1,12 +1,12 @@
 
-from typing import Dict, Any
+from typing import Dict, Tuple, Any
+import importlib
 
 import sqlalchemy
 from sqlalchemy import URL, create_engine, select
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from constants import Status
-from jobModels.job_orm import Base, Job
 from configClasses.baseConfig import BaseConfig
 from .baseStrategy import BaseDataStrategy
 
@@ -19,7 +19,9 @@ class SQLStrategy(BaseDataStrategy):
         self.config = config.get_attribute("jobdb_dict", {})
 
         self.db_url = self.create_db_url()
-        
+
+        self._Base, self._Job = self.set_table_structure()
+
         self.engine: Optional[sqlalchemy.engine.Engine] = None
         self.Session: Optional[sqlalchemy.orm.sessionmaker] = None
         self.session: Optional[sqlalchemy.orm.Session] = None
@@ -96,6 +98,27 @@ class SQLStrategy(BaseDataStrategy):
         db_url = URL.create(**url_dict)
         return db_url
 
+    def set_table_structure(self) -> Tuple[DeclarativeBase,DeclarativeBase]:
+        """
+        A small strategy design pattern to enable the use of various table
+        designs within this SQLAlchemy interface. If 
+        self.config.get("table_def") returns None, then a dummy Job table 
+        definition will be imported from job_exec/jobModels/job_dummy_orm.py.
+        Else, the file path defined in "table_def" will be imported and the
+        Base and Job class will be assigned to the self._Base and self._Job
+        attributes. 
+
+        This enables testing of the sQL interface without implementing a fake
+        Job table that exactly mirrors the one created from the EFI website.
+        """
+        job_table_module = self.config.get("table_def")
+        if job_table_module:
+            module = importlib.import_module(job_table_module)
+            return getattr(module, "Base"), getattr(module, "Job")
+        else:
+            from jobModels.job_dummy_orm import Base, Job
+            return Base, Job
+
     ############################################################################
     # interface methods
     def load_data(self):
@@ -106,7 +129,7 @@ class SQLStrategy(BaseDataStrategy):
             self.engine = create_engine(self.db_url)
             
             # Create tables if they don't exist
-            Base.metadata.create_all(self.engine) 
+            self._Base.metadata.create_all(self.engine) 
             
             self.Session = sessionmaker(bind=self.engine)
             self.session = self.Session()
@@ -166,7 +189,7 @@ class SQLStrategy(BaseDataStrategy):
         status_strings = [flag.__str__() for flag in Status if flag in status]
         try:
             # query string using the status_strings list
-            statement = select(Job).where(Job.status.in_(status_strings))
+            statement = select(self._Job).where(self._Job.status.in_(status_strings))
             # execute the query
             for job in self.session.execute(statement):
                 yield job[0]
@@ -175,7 +198,7 @@ class SQLStrategy(BaseDataStrategy):
             print(f"Error fetching unfinished jobs: {e}")
             raise
 
-    def update_job(self, job_obj: Job, update_dict: Dict[str, Any]) -> None: 
+    def update_job(self, job_obj, update_dict: Dict[str, Any]) -> None: 
         """
         Update the Job object's attributes with information contained in the
         update_dict. 
