@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 
 from configClasses.baseConfig import BaseConfig
 from dataStrategies.sqlStrategy import SQLStrategy
-from jobModels.job_orm import Job 
+from jobModels.job_dummy_orm import Job 
 from constants import Status
 
 config_file = sys.argv[1]
