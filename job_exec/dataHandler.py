@@ -32,14 +32,14 @@ class DataHandler:
         
         NOTE: update this method as new strategies are implemented
         """
-        accepted_strategies = ["dummy","dictofdict","sqlite","mysql","sql"]
+        accepted_strategies = ["dummy","sql"]
         if self.strategy_type not in accepted_strategies:
             raise NotImplementedError("Data handler strategy not implemented." 
                 + " Please set an appropriate value in the config file in" 
                 + " section 'jobdb', keyword 'type'.")
-        elif self.strategy_type in ["dummy","dictofdict"]:
+        elif self.strategy_type in ["dummy"]:
             return DictOfDictStrategy
-        elif self.strategy_type in ["sqlite","mysql","sql"]:
+        elif self.strategy_type in ["sql"]:
             return SQLStrategy
 
     # Defining the interface to interact with the dataStrategies:
