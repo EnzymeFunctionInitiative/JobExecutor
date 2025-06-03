@@ -108,7 +108,7 @@ class SQLStrategy(BaseDataStrategy):
         Base and Job class will be assigned to the self._Base and self._Job
         attributes. 
 
-        This enables testing of the sQL interface without implementing a fake
+        This enables testing of the SQL interface without implementing a fake
         Job table that exactly mirrors the one created from the EFI website.
         """
         job_table_module = self.config.get("table_def")
