@@ -19,7 +19,7 @@ class Status(Flag):
         return self.name.lower()
 
     @classmethod
-    def getStatus(self, status_str: str):
+    def getFlag(self, status_str: str):
         if status_str is None:
             return None
         return getattr(self, status_str.upper(), None)

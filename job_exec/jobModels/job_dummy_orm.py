@@ -49,7 +49,7 @@ class FlagEnumType(TypeDecorator):
         """
         if value is None:
             return None
-        return self.enum_class.getStatus(value)
+        return self.enum_class.getFlag(value)
 
 class Base(DeclarativeBase):
     ## can do a whole bunch of stuff in this class before passing it on to 
@@ -102,9 +102,3 @@ class Job(Base):
                 + f" {completed_string})>")
 
 
-# from efi-web:
-# migrations/Version20250514011931.php
-#       $this->addSql('CREATE TABLE Job (id INT AUTO_INCREMENT NOT NULL, user_id INT DEFAULT NULL, uuid CHAR(36) NOT NULL COMMENT \'(DC2Type:guid)\', status VARCHAR(255) NOT NULL, type VARCHAR(255) NOT NULL, timeCreated DATETIME DEFAULT NULL, timeStarted DATETIME DEFAULT NULL, timeCompleted DATETIME DEFAULT NULL, efi_db_version VARCHAR(255) DEFAULT NULL, params JSON DEFAULT NULL COMMENT \'(DC2Type:json)\', results JSON DEFAULT NULL COMMENT \'(DC2Type:json)\', email VARCHAR(255) DEFAULT NULL, isPublic TINYINT(1) NOT NULL, parentJob_id INT DEFAULT NULL, job_type VARCHAR(255) NOT NULL, blastQuery VARCHAR(255) DEFAULT NULL, blastMaxSequences INT DEFAULT NULL, blastDatabase VARCHAR(255) DEFAULT NULL, blastEValue INT DEFAULT NULL, domain TINYINT(1) DEFAULT NULL, domainRegion VARCHAR(255) DEFAULT NULL, inputFasta LONGTEXT DEFAULT NULL, filterByFamilies VARCHAR(255) DEFAULT NULL, accessionIds VARCHAR(255) DEFAULT NULL, domainFamily VARCHAR(255) DEFAULT NULL, filename VARCHAR(255) DEFAULT NULL, sequenceDatabase VARCHAR(255) DEFAULT NULL, exclude_fragments TINYINT(1) DEFAULT NULL, minLength INT DEFAULT NULL, maxLength INT DEFAULT NULL, maxBlastSequences INT DEFAULT NULL, blastSequence LONGTEXT DEFAULT NULL, eValue INT DEFAULT NULL, maxSeqMSA INT DEFAULT NULL, minSeqMSA INT DEFAULT NULL, cooccurrence DOUBLE PRECISION DEFAULT NULL, neighborhood_size INT DEFAULT NULL, referenceDatabase VARCHAR(255) DEFAULT NULL, cdhitSequenceIdentity INT DEFAULT NULL, searchType VARCHAR(255) DEFAULT NULL, minSequenceLength INT DEFAULT NULL, maxSequenceLength INT DEFAULT NULL, allByAllBlastEValue INT DEFAULT NULL, jobName VARCHAR(255) DEFAULT NULL, excludeFragments TINYINT(1) DEFAULT NULL, families VARCHAR(255) DEFAULT NULL, sequence_version VARCHAR(255) DEFAULT NULL, fraction INT DEFAULT NULL, taxSearch VARCHAR(255) DEFAULT NULL, taxSearchName VARCHAR(255) DEFAULT NULL, INDEX IDX_C395A618A76ED395 (user_id), INDEX IDX_C395A6184A4533A0 (parentJob_id), PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
-# migrations/Version2025052614521.php
-#       $this->addSql('ALTER TABLE Job ADD alignmentScore DOUBLE PRECISION DEFAULT NULL, ADD alignmentScoreThreshold DOUBLE PRECISION DEFAULT NULL, ADD computeNeighborhoodConnectivity TINYINT(1) DEFAULT NULL, ADD fastaInput VARCHAR(255) DEFAULT NULL, ADD metagenomes LONGTEXT DEFAULT NULL, DROP params, DROP type, DROP minSequenceLength, DROP maxSequenceLength');
-#       $this->addSql('ALTER TABLE Job ADD params JSON DEFAULT NULL COMMENT \'(DC2Type:json)\', ADD type VARCHAR(255) NOT NULL, ADD minSequenceLength INT DEFAULT NULL, ADD maxSequenceLength INT DEFAULT NULL, DROP alignmentScore, DROP alignmentScoreThreshold, DROP computeNeighborhoodConnectivity, DROP fastaInput, DROP metagenomes');
