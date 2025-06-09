@@ -26,11 +26,11 @@ class SQLStrategy(BaseDataStrategy):
         self.Session: Optional[sqlalchemy.orm.sessionmaker] = None
         self.session: Optional[sqlalchemy.orm.Session] = None
 
+        # NOTE: UPDATE THIS LIST TO MATCH THE INHERITANCE CLASSES
         self.updatable_attrs = [
             "status",
             "timeStarted",
             "timeCompleted",
-            "results"
         ]
 
     def create_db_url(self) -> str:
