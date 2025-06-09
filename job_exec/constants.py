@@ -1,4 +1,5 @@
 
+from typing import Union
 from enum import Flag, auto
 
 class Status(Flag):
@@ -19,9 +20,17 @@ class Status(Flag):
         return self.name.lower()
 
     @classmethod
-    def getFlag(self, status_str: str):
-        if status_str is None:
-            return None
-        return getattr(self, status_str.upper(), None)
-
+    def getFlag(cls, status: Union[int, str]):
+        try:
+            if type(status) == int:
+                return cls(status)
+            elif type(status) == str:
+                return getattr(cls, status.upper())
+            else:
+                raise ValueError(f"Given status value ({status}) is" 
+                    + " incorrectly typed.")
+        except (ValueError, AttributeError) as e:
+            print(f"Given status value ({status}) does not match a Status" 
+                + f" Flag.\n{e}")
+            raise
 
