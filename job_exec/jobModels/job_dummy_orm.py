@@ -1,9 +1,10 @@
 
 from datetime import datetime
+from enum import Flag
 
 import sqlalchemy
 
-from sqlalchemy import String, DateTime, func
+from sqlalchemy import String, func
 from sqlalchemy.orm import DeclarativeBase, mapped_column, Mapped
 from sqlalchemy.types import TypeDecorator
 
@@ -25,7 +26,7 @@ class FlagEnumType(TypeDecorator):
         self.enum_class = enum_class
         super().__init__(*args, **kwargs)
 
-    def process_bind_param(self, value: Status, dialect):
+    def process_bind_param(self, value: Flag, dialect) -> str:
         """ 
         Overwrite TypeDecorator.process_bind_param() method to implement custom
         handling for this object. Documentation:
@@ -37,7 +38,7 @@ class FlagEnumType(TypeDecorator):
         """
         return value.__str__()
 
-    def process_result_value(self, value, dialect):
+    def process_result_value(self, value, dialect) -> Flag:
         """
         Overwrite TypeDecorator.process_result_value() method to implement 
         custom handling for this object. Documentation:
@@ -47,8 +48,6 @@ class FlagEnumType(TypeDecorator):
         python type, in this case a Flag object (e.g. "queued" in the DB is 
         converted to Status.QUEUED)
         """
-        if value is None:
-            return None
         return self.enum_class.getFlag(value)
 
 class Base(DeclarativeBase):
