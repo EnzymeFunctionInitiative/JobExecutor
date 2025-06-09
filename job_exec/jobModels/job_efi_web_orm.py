@@ -1,6 +1,7 @@
 
 from datetime import datetime
 from enum import Flag
+import json
 
 import sqlalchemy
 
@@ -99,6 +100,14 @@ class Job(Base):
                 + f" efi_type='{self.efi_type}'," 
                 + f" timeCreated='{self.timeCreated}'" 
                 + f" {completed_string})>")
+
+    def generate_params_str(self) -> str:
+        """
+        Create a yaml-formatted string containing the key:value pairs for the 
+        given row
+        """
+        #subdict = {}
+        return json.dumps(self.__dict__, indent=4)  # I think this prints a whole bunch of extra parameters associated with pythonic/SQLAlchemy info...
 
 ################################################################################
 # Mixin Column Classes
