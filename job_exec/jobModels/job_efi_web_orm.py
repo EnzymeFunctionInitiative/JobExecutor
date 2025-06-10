@@ -56,6 +56,16 @@ class Job(Base):
         "jobName",
     ])
 
+    # assign a class variable to contain parameters that can be updated as jobs
+    # are processed
+    _updatable_attrs: ClassVar[set[str]] = frozenset([
+        "status",
+        "timeStarted",
+        "timeCompleted",
+        "schedulerJobId",
+        "results",  # NOTES: likely to change
+    ])
+
     def __repr__(self):
         if self.status in Status.COMPLETED:
             completed_string = f"timeStarted='{self.timeStarted}', timeCompleted='{self.timeCompleted}'"
@@ -89,6 +99,9 @@ class AlignmentScoreParameters:
     # assign a class variable to contain parameters that have relevance to the
     # nextflow pipeline(s)
     _parameter_attrs: ClassVar[set[str]] = frozenset(["alignmentScore"])
+    # assign a class variable to contain parameters that can be updated as jobs
+    # are processed
+    _updatable_attrs: ClassVar[set[str]] = frozenset([])
 
 class BlastSequenceParameters:
     blastSequence: Mapped[str | None] = mapped_column(
@@ -97,6 +110,9 @@ class BlastSequenceParameters:
     # assign a class variable to contain parameters that have relevance to the
     # nextflow pipeline(s)
     _parameter_attrs: ClassVar[set[str]] = frozenset(["blastSequence"])
+    # assign a class variable to contain parameters that can be updated as jobs
+    # are processed
+    _updatable_attrs: ClassVar[set[str]] = frozenset([])
 
 # temp name for this. match to the Trait.php file on efi-web (assuming its made)
 class SequenceLengthParameters:
@@ -109,6 +125,9 @@ class SequenceLengthParameters:
     # assign a class variable to contain parameters that have relevance to the
     # nextflow pipeline(s)
     _parameter_attrs: ClassVar[set[str]] = frozenset(["minLength", "maxLength"])
+    # assign a class variable to contain parameters that can be updated as jobs
+    # are processed
+    _updatable_attrs: ClassVar[set[str]] = frozenset([])
 
 class ProteinFamilyAdditionParameters:
     families: Mapped[str | None] = mapped_column(
@@ -131,6 +150,9 @@ class ProteinFamilyAdditionParameters:
         "fraction",
         "numUnirefClusters"
     ])
+    # assign a class variable to contain parameters that can be updated as jobs
+    # are processed
+    _updatable_attrs: ClassVar[set[str]] = frozenset([])
 
 class DomainBoundariesParameters:
     domain: Mapped[bool | None] = mapped_column(
@@ -142,6 +164,9 @@ class DomainBoundariesParameters:
     # assign a class variable to contain parameters that have relevance to the
     # nextflow pipeline(s)
     _parameter_attrs: ClassVar[set[str]] = frozenset(["domain", "domainRegion"])
+    # assign a class variable to contain parameters that can be updated as jobs
+    # are processed
+    _updatable_attrs: ClassVar[set[str]] = frozenset([])
 
 class ExcludeFragmentsParameters:
     excludeFragments: Mapped[bool | None] = mapped_column(
@@ -150,6 +175,9 @@ class ExcludeFragmentsParameters:
     # assign a class variable to contain parameters that have relevance to the
     # nextflow pipeline(s)
     _parameter_attrs: ClassVar[set[str]] = frozenset(["excludeFragments"])
+    # assign a class variable to contain parameters that can be updated as jobs
+    # are processed
+    _updatable_attrs: ClassVar[set[str]] = frozenset([])
 
 class FilterByTaxonomyParameters:
     taxSearch: Mapped[str | None] = mapped_column(
@@ -164,6 +192,9 @@ class FilterByTaxonomyParameters:
         "taxSearch", 
         "taxSearchName"
     ])
+    # assign a class variable to contain parameters that can be updated as jobs
+    # are processed
+    _updatable_attrs: ClassVar[set[str]] = frozenset([])
 
 class FilterByFamiliesParameters:
     filterByFamilies: Mapped[str | None] = mapped_column(
@@ -172,6 +203,9 @@ class FilterByFamiliesParameters:
     # assign a class variable to contain parameters that have relevance to the
     # nextflow pipeline(s)
     _parameter_attrs: ClassVar[set[str]] = frozenset(["filterByFamilies"])
+    # assign a class variable to contain parameters that can be updated as jobs
+    # are processed
+    _updatable_attrs: ClassVar[set[str]] = frozenset([])
 
 class UserUploadedIdsParameters:
     # NOTE: these are results parameters?
@@ -188,6 +222,12 @@ class UserUploadedIdsParameters:
     #    "numMatchedIds", 
     #    "numUnmatchedIds"
     #])
+    # assign a class variable to contain parameters that can be updated as jobs
+    # are processed
+    _updatable_attrs: ClassVar[set[str]] = frozenset([
+        "numMatchedIds", 
+        "numUnmatchedIds"
+    ])
 
 class FilenameParameters:
     uploadedFilename: Mapped[str | None] = mapped_column(
@@ -206,6 +246,9 @@ class FilenameParameters:
         "jobFilename",
         "updatedAt"
     ])
+    # assign a class variable to contain parameters that can be updated as jobs
+    # are processed
+    _updatable_attrs: ClassVar[set[str]] = frozenset(["updatedAt"])
 
 class SequenceDatabaseParameters:
     blastEValue: Mapped[int | None] = mapped_column(
@@ -224,6 +267,9 @@ class SequenceDatabaseParameters:
         "maxBlastSequences",
         "sequenceDatabase"
     ])
+    # assign a class variable to contain parameters that can be updated as jobs
+    # are processed
+    _updatable_attrs: ClassVar[set[str]] = frozenset([])
 
 class SearchParameters:
     searchType: Mapped[str | None] = mapped_column(
@@ -232,6 +278,9 @@ class SearchParameters:
     # assign a class variable to contain parameters that have relevance to the
     # nextflow pipeline(s)
     _parameter_attrs: ClassVar[set[str]] = frozenset(["searchType"])
+    # assign a class variable to contain parameters that can be updated as jobs
+    # are processed
+    _updatable_attrs: ClassVar[set[str]] = frozenset([])
 
 class ESTGenerateJob:
     allByAllBlastEValue: Mapped[int | None] = mapped_column(
@@ -259,6 +308,16 @@ class ESTGenerateJob:
     # assign a class variable to contain parameters that have relevance to the
     # nextflow pipeline(s)
     _parameter_attrs: ClassVar[set[str]] = frozenset(["allByAllBlastEValue"])
+    # assign a class variable to contain parameters that can be updated as jobs
+    # are processed
+    _updatable_attrs: ClassVar[set[str]] = frozenset([
+        "numFamilyOverlap",
+        "numNonFamily",
+        "numUnirefFamilyOverlap",
+        "numComputedSequences",
+        "numUniqueSequences",
+        "numBlastEdges",
+    ])
 
 class GNTDiagramJob:
     neighborhoodWindowSize: Mapped[int | None] = mapped_column(
@@ -267,6 +326,9 @@ class GNTDiagramJob:
     # assign a class variable to contain parameters that have relevance to the
     # nextflow pipeline(s)
     _parameter_attrs: ClassVar[set[str]] = frozenset(["neighborhoodWindowSize"])
+    # assign a class variable to contain parameters that can be updated as jobs
+    # are processed
+    _updatable_attrs: ClassVar[set[str]] = frozenset([])
 
 ###############################################################################
 # polymorphic_identity classes
@@ -295,6 +357,15 @@ class ESTGenerateFastaJob(
         UserUploadedIdsParameters._parameter_attrs,
         frozenset(["inputFasta"])
     )
+    # assign a class variable to contain parameters that can be updated as jobs
+    # are processed
+    _updatable_attrs: ClassVar[set[str]] = Job._updatable_attrs.union(
+        ESTGenerateJob._updatable_attrs,
+        FilenameParameters._updatable_attrs,
+        FilterByFamiliesParameters._updatable_attrs,
+        ProteinFamilyAdditionParameters._updatable_attrs,
+        UserUploadedIdsParameters._updatable_attrs,
+    )
 
 class ESTGenerateFamiliesJob(
         Job,
@@ -317,6 +388,15 @@ class ESTGenerateFamiliesJob(
         ExcludeFragmentsParameters._parameter_attrs,
         FilterByTaxonomyParameters._parameter_attrs,
         ProteinFamilyAdditionParameters._parameter_attrs,
+    )
+    # assign a class variable to contain parameters that can be updated as jobs
+    # are processed
+    _updatable_attrs: ClassVar[set[str]] = Job._updatable_attrs.union(
+        ESTGenerateJob._updatable_attrs,
+        DomainBoundariesParameters._updatable_attrs,
+        ExcludeFragmentsParameters._updatable_attrs,
+        FilterByTaxonomyParameters._updatable_attrs,
+        ProteinFamilyAdditionParameters._updatable_attrs,
     )
 
 class ESTGenerateBlastJob(
@@ -342,6 +422,16 @@ class ESTGenerateBlastJob(
         FilterByTaxonomyParameters._parameter_attrs,
         ProteinFamilyAdditionParameters._parameter_attrs,
         SequenceDatabaseParameters._parameter_attrs,
+    )
+    # assign a class variable to contain parameters that can be updated as jobs
+    # are processed
+    _updatable_attrs: ClassVar[set[str]] = Job._updatable_attrs.union(
+        ESTGenerateJob._updatable_attrs,
+        BlastSequenceParameters._updatable_attrs,
+        ExcludeFragmentsParameters._updatable_attrs,
+        FilterByTaxonomyParameters._updatable_attrs,
+        ProteinFamilyAdditionParameters._updatable_attrs,
+        SequenceDatabaseParameters._updatable_attrs,
     )
 
 class ESTGenerateAccessionJob(
@@ -374,6 +464,18 @@ class ESTGenerateAccessionJob(
         UserUploadedIdsParameters._parameter_attrs,
         frozenset(["domainFamily"])
     )
+    # assign a class variable to contain parameters that can be updated as jobs
+    # are processed
+    _updatable_attrs: ClassVar[set[str]] = Job._updatable_attrs.union(
+        ESTGenerateJob._updatable_attrs,
+        DomainBoundariesParameters._updatable_attrs,
+        ExcludeFragmentsParameters._updatable_attrs,
+        FilenameParameters._updatable_attrs,
+        FilterByFamiliesParameters._updatable_attrs,
+        FilterByTaxonomyParameters._updatable_attrs,
+        ProteinFamilyAdditionParameters._updatable_attrs,
+        UserUploadedIdsParameters._updatable_attrs,
+    )
 
 class ESTSSNFinalizationJob(
         Job,
@@ -397,6 +499,14 @@ class ESTSSNFinalizationJob(
         SequenceLengthParameters._parameter_attrs,
         {"computeNeighborhoodConnectivity"}
     )
+    # assign a class variable to contain parameters that can be updated as jobs
+    # are processed
+    _updatable_attrs: ClassVar[set[str]] = Job._updatable_attrs.union(
+        AlignmentScoreParameters._updatable_attrs,
+        ExcludeFragmentsParameters._updatable_attrs,
+        FilterByTaxonomyParameters._updatable_attrs,
+        SequenceLengthParameters._updatable_attrs,
+    )
 
 class ESTNeighborhoodConnectivityJob(Job, FilenameParameters):
     __mapper_args__ = {
@@ -408,6 +518,11 @@ class ESTNeighborhoodConnectivityJob(Job, FilenameParameters):
     # nextflow pipeline(s); gathers all mixin classes' parameters too
     _parameter_attrs: ClassVar[set[str]] = Job._parameter_attrs.union(
         FilenameParameters._parameter_attrs,
+    )
+    # assign a class variable to contain parameters that can be updated as jobs
+    # are processed
+    _updatable_attrs: ClassVar[set[str]] = Job._updatable_attrs.union(
+        FilenameParameters._updatable_attrs,
     )
 
 class ESTConvergenceRatioJob(
@@ -426,6 +541,12 @@ class ESTConvergenceRatioJob(
         AlignmentScoreParameters._parameter_attrs,
         FilenameParameters._parameter_attrs,
     )
+    # assign a class variable to contain parameters that can be updated as jobs
+    # are processed
+    _updatable_attrs: ClassVar[set[str]] = Job._updatable_attrs.union(
+        AlignmentScoreParameters._updatable_attrs,
+        FilenameParameters._updatable_attrs,
+    )
 
 class ESTClusterAnalysisJob(Job, FilenameParameters):
     __mapper_args__ = {
@@ -441,6 +562,11 @@ class ESTClusterAnalysisJob(Job, FilenameParameters):
         FilenameParameters._parameter_attrs,
         frozenset(["minSeqMSA","maxSeqMSA"])
     )
+    # assign a class variable to contain parameters that can be updated as jobs
+    # are processed
+    _updatable_attrs: ClassVar[set[str]] = Job._updatable_attrs.union(
+        FilenameParameters._updatable_attrs,
+    )
 
 class ESTColorSSNJob(Job, FilenameParameters):
     __mapper_args__ = {
@@ -452,6 +578,11 @@ class ESTColorSSNJob(Job, FilenameParameters):
     # nextflow pipeline(s); gathers all mixin classes' parameters too
     _parameter_attrs: ClassVar[set[str]] = Job._parameter_attrs.union(
         FilenameParameters._parameter_attrs,
+    )
+    # assign a class variable to contain parameters that can be updated as jobs
+    # are processed
+    _updatable_attrs: ClassVar[set[str]] = Job._updatable_attrs.union(
+        FilenameParameters._updatable_attrs,
     )
 
 class GNTGNNJob(Job, GNTDiagramJob, FilenameParameters):
@@ -470,6 +601,12 @@ class GNTGNNJob(Job, GNTDiagramJob, FilenameParameters):
         GNTDiagramJob._parameter_attrs,
         FilenameParameters._parameter_attrs,
         frozenset(["cooccurrence","neighborhood_size"])
+    )
+    # assign a class variable to contain parameters that can be updated as jobs
+    # are processed
+    _updatable_attrs: ClassVar[set[str]] = Job._updatable_attrs.union(
+        GNTDiagramJob._updatable_attrs,
+        FilenameParameters._updatable_attrs,
     )
 
 class GNTDiagramBlastJob(
@@ -492,6 +629,14 @@ class GNTDiagramBlastJob(
         ExcludeFragmentsParameters._parameter_attrs,
         SequenceDatabaseParameters._parameter_attrs,
     )
+    # assign a class variable to contain parameters that can be updated as jobs
+    # are processed
+    _updatable_attrs: ClassVar[set[str]] = Job._updatable_attrs.union(
+        GNTDiagramJob._updatable_attrs,
+        BlastSequenceParameters._updatable_attrs,
+        ExcludeFragmentsParameters._updatable_attrs,
+        SequenceDatabaseParameters._updatable_attrs,
+    )
 
 class GNTDiagramFastaJob(Job, GNTDiagramJob, FilenameParameters):
     __mapper_args__ = {
@@ -504,6 +649,12 @@ class GNTDiagramFastaJob(Job, GNTDiagramJob, FilenameParameters):
     _parameter_attrs: ClassVar[set[str]] = Job._parameter_attrs.union(
         GNTDiagramJob._parameter_attrs,
         FilenameParameters._parameter_attrs,
+    )
+    # assign a class variable to contain parameters that can be updated as jobs
+    # are processed
+    _updatable_attrs: ClassVar[set[str]] = Job._updatable_attrs.union(
+        GNTDiagramJob._updatable_attrs,
+        FilenameParameters._updatable_attrs,
     )
 
 class GNTDiagramSequenceIdJob(
@@ -526,6 +677,14 @@ class GNTDiagramSequenceIdJob(
         FilenameParameters._parameter_attrs,
         SequenceDatabaseParameters._parameter_attrs,
     )
+    # assign a class variable to contain parameters that can be updated as jobs
+    # are processed
+    _updatable_attrs: ClassVar[set[str]] = Job._updatable_attrs.union(
+        GNTDiagramJob._updatable_attrs,
+        ExcludeFragmentsParameters._updatable_attrs,
+        FilenameParameters._updatable_attrs,
+        SequenceDatabaseParameters._updatable_attrs,
+    )
 
 class GNTViewDiagramJob(Job, FilenameParameters):
     __mapper_args__ = {
@@ -537,6 +696,11 @@ class GNTViewDiagramJob(Job, FilenameParameters):
     # nextflow pipeline(s); gathers all mixin classes' parameters too
     _parameter_attrs: ClassVar[set[str]] = Job._parameter_attrs.union(
         FilenameParameters._parameter_attrs,
+    )
+    # assign a class variable to contain parameters that can be updated as jobs
+    # are processed
+    _updatable_attrs: ClassVar[set[str]] = Job._updatable_attrs.union(
+        FilenameParameters._updatable_attrs,
     )
 
 class CGFPIdentifyJob(
@@ -560,6 +724,13 @@ class CGFPIdentifyJob(
         SequenceLengthParameters._parameter_attrs,
         frozenset(["referenceDatabase","cdhitSequenceIdentity"])
     )
+    # assign a class variable to contain parameters that can be updated as jobs
+    # are processed
+    _updatable_attrs: ClassVar[set[str]] = Job._updatable_attrs.union(
+        FilenameParameters._updatable_attrs,
+        SearchParameters._updatable_attrs,
+        SequenceLengthParameters._updatable_attrs,
+    )
 
 class CGFPQuantifyJob(Job,SearchParameters):
     __mapper_args__ = {
@@ -573,6 +744,11 @@ class CGFPQuantifyJob(Job,SearchParameters):
     _parameter_attrs: ClassVar[set[str]] = Job._parameter_attrs.union(
         SearchParameters._parameter_attrs,
         frozenset(["metagenomes"])
+    )
+    # assign a class variable to contain parameters that can be updated as jobs
+    # are processed
+    _updatable_attrs: ClassVar[set[str]] = Job._updatable_attrs.union(
+        SearchParameters._updatable_attrs,
     )
 
 class TaxonomyAccessionJob(
@@ -597,6 +773,15 @@ class TaxonomyAccessionJob(
         FilenameParameters._parameter_attrs,
         SequenceDatabaseParameters._parameter_attrs,
     )
+    # assign a class variable to contain parameters that can be updated as jobs
+    # are processed
+    _updatable_attrs: ClassVar[set[str]] = Job._updatable_attrs.union(
+        ExcludeFragmentsParameters._updatable_attrs,
+        FilterByFamiliesParameters._updatable_attrs,
+        FilterByTaxonomyParameters._updatable_attrs,
+        FilenameParameters._updatable_attrs,
+        SequenceDatabaseParameters._updatable_attrs,
+    )
 
 class TaxonomyFamiliesJob(
         Job,
@@ -618,6 +803,14 @@ class TaxonomyFamiliesJob(
         FilterByTaxonomyParameters._parameter_attrs,
         SequenceLengthParameters._parameter_attrs,
     )
+    # assign a class variable to contain parameters that can be updated as jobs
+    # are processed
+    _updatable_attrs: ClassVar[set[str]] = Job._updatable_attrs.union(
+        ExcludeFragmentsParameters._updatable_attrs,
+        FilterByFamiliesParameters._updatable_attrs,
+        FilterByTaxonomyParameters._updatable_attrs,
+        SequenceLengthParameters._updatable_attrs,
+    )
 
 class TaxonomyFastaJob(
         Job,
@@ -638,6 +831,14 @@ class TaxonomyFastaJob(
         FilenameParameters._parameter_attrs,
         FilterByFamiliesParameters._parameter_attrs,
         FilterByTaxonomyParameters._parameter_attrs,
+    )
+    # assign a class variable to contain parameters that can be updated as jobs
+    # are processed
+    _updatable_attrs: ClassVar[set[str]] = Job._updatable_attrs.union(
+        ExcludeFragmentsParameters._updatable_attrs,
+        FilenameParameters._updatable_attrs,
+        FilterByFamiliesParameters._updatable_attrs,
+        FilterByTaxonomyParameters._updatable_attrs,
     )
 
 ################################################################################
