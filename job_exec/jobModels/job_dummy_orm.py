@@ -1,54 +1,13 @@
 
 from datetime import datetime
-from enum import Flag
 
 import sqlalchemy
 
-from sqlalchemy import String, func
+from sqlalchemy import func
 from sqlalchemy.orm import DeclarativeBase, mapped_column, Mapped
-from sqlalchemy.types import TypeDecorator
 
 from constants import Status
-
-class FlagEnumType(TypeDecorator):
-    """ 
-    SQLAlchemy does not know how to handle python Enum/Flag values as DB column
-    values. This class is developing the custom handling of a String column 
-    (stored as a VARCHAR or equivalent) and an associated python Flag object.
-
-    This is general code that works for any python Flag Enum, but is intended 
-    for the Status object and the status column in the DB. 
-    """
-    impl = String   # DB column is implemented as a SQLAlchemy String 
-    cache_ok = True
-
-    def __init__(self, enum_class, *args, **kwargs):
-        self.enum_class = enum_class
-        super().__init__(*args, **kwargs)
-
-    def process_bind_param(self, value: Flag, dialect) -> str:
-        """ 
-        Overwrite TypeDecorator.process_bind_param() method to implement custom
-        handling for this object. Documentation:
-        https://docs.sqlalchemy.org/en/20/core/custom_types.html#sqlalchemy.types.TypeDecorator.process_bind_param
-
-        This is used to convert an instance of the python Flag class (e.g. 
-        Status.QUEUED) into a string that can be used in the SQL DB (e.g. 
-        "queued"). 
-        """
-        return value.__str__()
-
-    def process_result_value(self, value, dialect) -> Flag:
-        """
-        Overwrite TypeDecorator.process_result_value() method to implement 
-        custom handling for this object. Documentation:
-        https://docs.sqlalchemy.org/en/20/core/custom_types.html#sqlalchemy.types.TypeDecorator.process_result_value
-
-        This is used to convert a result-row column's value to the returned 
-        python type, in this case a Flag object (e.g. "queued" in the DB is 
-        converted to Status.QUEUED)
-        """
-        return self.enum_class.getFlag(value)
+from jobModels.flag_enum_type import FlagEnumType
 
 class Base(DeclarativeBase):
     ## can do a whole bunch of stuff in this class before passing it on to 
