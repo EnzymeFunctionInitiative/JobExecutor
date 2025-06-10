@@ -3,6 +3,8 @@ from datetime import datetime
 from enum import Flag
 import json
 
+from typing import ClassVar
+
 import sqlalchemy
 
 from sqlalchemy import String, func
@@ -12,13 +14,13 @@ from sqlalchemy.types import TypeDecorator
 from constants import Status
 
 class FlagEnumType(TypeDecorator):
-    """ 
+    """
     SQLAlchemy does not know how to handle python Enum/Flag values as DB column
-    values. This class is developing the custom handling of a str column 
+    values. This class is developing the custom handling of a str column
     (stored as a VARCHAR or equivalent) and an associated python Flag object.
 
-    This is general code that works for any python Flag Enum, but is intended 
-    for the Status object and the status column in the DB. 
+    This is general code that works for any python Flag Enum, but is intended
+    for the Status object and the status column in the DB.
     """
     impl = String   # DB column is implemented as a SQLAlchemy String
     cache_ok = True
@@ -28,25 +30,25 @@ class FlagEnumType(TypeDecorator):
         super().__init__(*args, **kwargs)
 
     def process_bind_param(self, value: Flag, dialect):
-        """ 
+        """
         Overwrite TypeDecorator.process_bind_param() method to implement custom
         handling for this object. Documentation:
         https://docs.sqlalchemy.org/en/20/core/custom_types.html#sqlalchemy.types.TypeDecorator.process_bind_param
 
-        This is used to convert an instance of the python Flag class (e.g. 
-        Status.QUEUED) into a string that can be used in the SQL DB (e.g. 
-        "queued"). 
+        This is used to convert an instance of the python Flag class (e.g.
+        Status.QUEUED) into a string that can be used in the SQL DB (e.g.
+        "queued").
         """
         return value.__str__()
 
     def process_result_value(self, value, dialect) -> Flag:
         """
-        Overwrite TypeDecorator.process_result_value() method to implement 
+        Overwrite TypeDecorator.process_result_value() method to implement
         custom handling for this object. Documentation:
         https://docs.sqlalchemy.org/en/20/core/custom_types.html#sqlalchemy.types.TypeDecorator.process_result_value
 
-        This is used to convert a result-row column's value to the returned 
-        python type, for example a status column value of "queued" in the DB is 
+        This is used to convert a result-row column's value to the returned
+        python type, for example a status column value of "queued" in the DB is
         converted to Status.QUEUED.
         """
         return self.enum_class.getFlag(value)
@@ -56,13 +58,13 @@ class Base(DeclarativeBase):
 
 class Job(Base):
     """
-    SQLAlchemy model for the EFI-Web 'Job' table. 
+    SQLAlchemy model for the EFI-Web 'Job' table.
     """
     __tablename__ = 'Job'
 
     # SQLalchemy ORM 2.0x notes: PEP484 type annotations used with `Mapped`
     # enables skipping the `mapped_column()` call. The `Mapped` annotation can
-    # be used to set datatype _and_ nullability for the column. Default for 
+    # be used to set datatype _and_ nullability for the column. Default for
     # nullable is True for non-primary key columns.
     
     # general parameters
@@ -75,7 +77,6 @@ class Job(Base):
     timeStarted: Mapped[datetime | None]
     timeCompleted: Mapped[datetime | None]
     efi_db_version: Mapped[str | None]
-    email: Mapped[str | None]
     isPublic: Mapped[bool] = mapped_column(nullable=False)
     isExample: Mapped[bool | None]   # should this be nullable?
     parentJob_id: Mapped[int | None]
@@ -88,6 +89,14 @@ class Job(Base):
         "polymorphic_identity": "job",
     }
 
+    # assign a class variable to contain parameters that have relevance to the
+    # nextflow pipeline(s)
+    _parameter_attrs: ClassVar[set[str]] = {
+        "job_id",
+        "jobName",
+        "",
+    }
+
     def __repr__(self):
         if self.status in Status.COMPLETED:
             completed_string = f"timeStarted='{self.timeStarted}', timeCompleted='{self.timeCompleted}'"
@@ -95,19 +104,18 @@ class Job(Base):
             completed_string = f"timeStarted='{self.timeStarted}'"
         else:
             completed_string = ""
-        return (f"<self.__class__.__name__(id={self.job_id}," 
-                + f" status='{self.status}'," 
-                + f" efi_type='{self.efi_type}'," 
-                + f" timeCreated='{self.timeCreated}'" 
+        return (f"<self.__class__.__name__(id={self.job_id},"
+                + f" status='{self.status}',"
+                + f" efi_type='{self.efi_type}',"
+                + f" timeCreated='{self.timeCreated}'"
                 + f" {completed_string})>")
 
-    def generate_params_str(self) -> str:
+    def get_parameters_dict(self) -> Dict[str, Any]:
         """
-        Create a yaml-formatted string containing the key:value pairs for the 
-        given row
+        Create a dictionary of attributes that should be written to a
+        params.yaml file.
         """
-        #subdict = {}
-        return json.dumps(self.__dict__, indent=4)  # I think this prints a whole bunch of extra parameters associated with pythonic/SQLAlchemy info...
+        return {key: getattr(self, key) for key in self._parameter_attrs}
 
 ################################################################################
 # Mixin Column Classes
@@ -119,11 +127,17 @@ class AlignmentScoreParameters:
     alignmentScore: Mapped[int | None] = mapped_column(
         use_existing_column=True
     )
+    # assign a class variable to contain parameters that have relevance to the
+    # nextflow pipeline(s)
+    _parameter_attrs: ClassVar[set[str]] = {"alignmentScore"}
 
 class BlastSequenceParameters:
     blastSequence: Mapped[str | None] = mapped_column(
         use_existing_column=True
     )
+    # assign a class variable to contain parameters that have relevance to the
+    # nextflow pipeline(s)
+    _parameter_attrs: ClassVar[set[str]] = {"blastSequence"}
 
 # temp name for this. match to the Trait.php file on efi-web (assuming its made)
 class SequenceLengthParameters:
@@ -133,6 +147,9 @@ class SequenceLengthParameters:
     maxLength: Mapped[int | None] = mapped_column(
         use_existing_column=True
     )
+    # assign a class variable to contain parameters that have relevance to the
+    # nextflow pipeline(s)
+    _parameter_attrs: ClassVar[set[str]] = {"minLength", "maxLength"}
 
 class ProteinFamilyAdditionParameters:
     families: Mapped[str | None] = mapped_column(
@@ -147,6 +164,14 @@ class ProteinFamilyAdditionParameters:
     numUnirefClusters: Mapped[int | None] = mapped_column(
         use_existing_column=True
     )
+    # assign a class variable to contain parameters that have relevance to the
+    # nextflow pipeline(s)
+    _parameter_attrs: ClassVar[set[str]] = {
+        "families",
+        "sequence_version",
+        "fraction",
+        "numUnirefClusters"
+    }
 
 class DomainBoundariesParameters:
     domain: Mapped[bool | None] = mapped_column(
@@ -155,11 +180,17 @@ class DomainBoundariesParameters:
     domainRegion: Mapped[str | None] = mapped_column(
         use_existing_column=True
     )
+    # assign a class variable to contain parameters that have relevance to the
+    # nextflow pipeline(s)
+    _parameter_attrs: ClassVar[set[str]] = {"domain", "domainRegion"}
 
 class ExcludeFragmentsParameters:
     excludeFragments: Mapped[bool | None] = mapped_column(
         use_existing_column=True
     )
+    # assign a class variable to contain parameters that have relevance to the
+    # nextflow pipeline(s)
+    _parameter_attrs: ClassVar[set[str]] = {"excludeFragments"}
 
 class FilterByTaxonomyParameters:
     taxSearch: Mapped[str | None] = mapped_column(
@@ -173,14 +204,21 @@ class FilterByFamiliesParameters:
     filterByFamilies: Mapped[str | None] = mapped_column(
         use_existing_column=True
     )
+    # assign a class variable to contain parameters that have relevance to the
+    # nextflow pipeline(s)
+    _parameter_attrs: ClassVar[set[str]] = {"filterByFamilies"}
 
 class UserUploadedIdsParameters:
+    # NOTE: these are results parameters?
     numMatchedIds: Mapped[int | None] = mapped_column(
         use_existing_column=True
     )
     numUnmatchedIds: Mapped[int | None] = mapped_column(
         use_existing_column=True
     )
+    ## assign a class variable to contain parameters that have relevance to the
+    ## nextflow pipeline(s)
+    #_parameter_attrs: ClassVar[set[str]] = {"numMatchedIds", "numUnmatchedIds"}
 
 class FilenameParameters:
     uploadedFilename: Mapped[str | None] = mapped_column(
@@ -192,6 +230,13 @@ class FilenameParameters:
     updatedAt: Mapped[datetime | None] = mapped_column(
         use_existing_column=True
     )
+    # assign a class variable to contain parameters that have relevance to the
+    # nextflow pipeline(s)
+    _parameter_attrs: ClassVar[set[str]] = {
+        "uploadedFilename",
+        "jobFilename",
+        "updatedAt"
+    }
 
 class SequenceDatabaseParameters:
     blastEValue: Mapped[int | None] = mapped_column(
@@ -203,69 +248,93 @@ class SequenceDatabaseParameters:
     sequenceDatabase: Mapped[str | None] = mapped_column(
         use_existing_column=True
     )
+    # assign a class variable to contain parameters that have relevance to the
+    # nextflow pipeline(s)
+    _parameter_attrs: ClassVar[set[str]] = {
+        "blastEValue",
+        "maxBlastSequences",
+        "sequenceDatabase"
+    }
 
 class SearchParameters:
     searchType: Mapped[str | None] = mapped_column(
         use_existing_column=True
     )
+    # assign a class variable to contain parameters that have relevance to the
+    # nextflow pipeline(s)
+    _parameter_attrs: ClassVar[set[str]] = {"searchType"}
 
 class ESTGenerateJob:
     allByAllBlastEValue: Mapped[int | None] = mapped_column(
         use_existing_column=True
     )
-    # results columns
-    numFamilyOverlap: Mapped[int | None] = mapped_column( 
+    # results columns, not important parameters for nextflow pipelines
+    numFamilyOverlap: Mapped[int | None] = mapped_column(
         use_existing_column=True
     )
-    numNonFamily: Mapped[int | None] = mapped_column( 
+    numNonFamily: Mapped[int | None] = mapped_column(
         use_existing_column=True
     )
-    numUnirefFamilyOverlap: Mapped[int | None] = mapped_column( 
+    numUnirefFamilyOverlap: Mapped[int | None] = mapped_column(
         use_existing_column=True
     )
-    numComputedSequences: Mapped[int | None] = mapped_column( 
+    numComputedSequences: Mapped[int | None] = mapped_column(
         use_existing_column=True
     )
-    numUniqueSequences: Mapped[int | None] = mapped_column( 
+    numUniqueSequences: Mapped[int | None] = mapped_column(
         use_existing_column=True
     )
-    numBlastEdges: Mapped[int | None] = mapped_column( 
+    numBlastEdges: Mapped[int | None] = mapped_column(
         use_existing_column=True
     )
+    # assign a class variable to contain parameters that have relevance to the
+    # nextflow pipeline(s)
+    _parameter_attrs: ClassVar[set[str]] = {"allByAllBlastEValue"}
 
 class GNTDiagramJob:
     neighborhoodWindowSize: Mapped[int | None] = mapped_column(
         use_existing_column=True
     )
+    # assign a class variable to contain parameters that have relevance to the
+    # nextflow pipeline(s)
+    _parameter_attrs: ClassVar[set[str]] = {"neighborhoodWindowSize"}
 
 ###############################################################################
 # polymorphic_identity classes
 
 class ESTGenerateFastaJob(
-        Job, 
-        ProteinFamilyAdditionParameters,
-        ESTGenerateJob, 
-        FilterByFamiliesParameters, 
-        UserUploadedIdsParameters, 
+        Job,
+        ESTGenerateJob,
         FilenameParameters
+        FilterByFamiliesParameters,
+        ProteinFamilyAdditionParameters,
+        UserUploadedIdsParameters,
     ):
     """
-    Inherits from the ESTGenerateJob class, adds parameters from various other
-    mixin classes. 
     """
     inputFasta: Mapped[str | None]
     __mapper_args__ = {
         "polymorphic_load": "selectin",
         "polymorphic_identity": "est_generate_fasta"
     }
+    # assign a class variable to contain parameters that have relevance to the
+    # nextflow pipeline(s); gathers all mixin classes' parameters too
+    _parameter_attrs: ClassVar[set[str]] = Job._parameter_attrs.union(
+        ESTGenerateJob._parameter_attrs,
+        FilenameParameters._parameter_attrs
+        FilterByFamiliesParameters._parameter_attrs,
+        ProteinFamilyAdditionParameters._parameter_attrs,
+        UserUploadedIdsParameters._parameter_attrs,
+        {"inputFasta"}
+    )
 
 class ESTGenerateFamiliesJob(
-        Job, 
-     sed to compute the GNNs themselves.  The window size is for how many neighbors to retrieve for GNDs.   ProteinFamilyAdditionParameters,
+        Job,
         ESTGenerateJob,
         DomainBoundariesParameters,
-        ExcludeFragmentsParameters, 
-        FilterByTaxonomyParameters
+        ExcludeFragmentsParameters,
+        FilterByTaxonomyParameters,
+        ProteinFamilyAdditionParameters,
     ):
     """
     """
@@ -273,12 +342,21 @@ class ESTGenerateFamiliesJob(
         "polymorphic_load": "selectin",
         "polymorphic_identity": "est_generate_families"
     }
+    # assign a class variable to contain parameters that have relevance to the
+    # nextflow pipeline(s); gathers all mixin classes' parameters too
+    _parameter_attrs: ClassVar[set[str]] = Job._parameter_attrs.union(
+        ESTGenerateJob._parameter_attrs,
+        DomainBoundariesParameters._parameter_attrs,
+        ExcludeFragmentsParameters._parameter_attrs,
+        FilterByTaxonomyParameters._parameter_attrs,
+        ProteinFamilyAdditionParameters._parameter_attrs,
+    )
 
 class ESTGenerateBlastJob(
-        Job, 
+        Job,
         ESTGenerateJob,
         BlastSequenceParameters,
-        ExcludeFragmentsParameters, 
+        ExcludeFragmentsParameters,
         FilterByTaxonomyParameters,
         ProteinFamilyAdditionParameters,
         SequenceDatabaseParameters,
@@ -289,17 +367,27 @@ class ESTGenerateBlastJob(
         "polymorphic_load": "selectin",
         "polymorphic_identity": "est_generate_blast"
     }
+    # assign a class variable to contain parameters that have relevance to the
+    # nextflow pipeline(s); gathers all mixin classes' parameters too
+    _parameter_attrs: ClassVar[set[str]] = Job._parameter_attrs.union(
+        ESTGenerateJob._parameter_attrs,
+        BlastSequenceParameters._parameter_attrs,
+        ExcludeFragmentsParameters._parameter_attrs,
+        FilterByTaxonomyParameters._parameter_attrs,
+        ProteinFamilyAdditionParameters._parameter_attrs,
+        SequenceDatabaseParameters._parameter_attrs,
+    )
 
 class ESTGenerateAccessionJob(
-        Job, 
+        Job,
         ESTGenerateJob,
         DomainBoundariesParameters,
-        ExcludeFragmentsParameters, 
+        ExcludeFragmentsParameters,
         FilenameParameters,
-        FilterByFamiliesParameters, 
+        FilterByFamiliesParameters,
         FilterByTaxonomyParameters,
-        UserUploadedIdsParameters, 
         ProteinFamilyAdditionParameters,
+        UserUploadedIdsParameters,
     ):
     """
     """
@@ -308,11 +396,23 @@ class ESTGenerateAccessionJob(
         "polymorphic_load": "selectin",
         "polymorphic_identity": "est_generate_accession"
     }
+    # assign a class variable to contain parameters that have relevance to the
+    # nextflow pipeline(s); gathers all mixin classes' parameters too
+    _parameter_attrs: ClassVar[set[str]] = Job._parameter_attrs.union(
+        ESTGenerateJob._parameter_attrs,
+        DomainBoundariesParameters._parameter_attrs,
+        ExcludeFragmentsParameters._parameter_attrs,
+        FilenameParameters._parameter_attrs,
+        FilterByFamiliesParameters._parameter_attrs,
+        FilterByTaxonomyParameters._parameter_attrs,
+        ProteinFamilyAdditionParameters._parameter_attrs,
+        UserUploadedIdsParameters._parameter_attrs,
+    )
 
 class ESTSSNFinalizationJob(
-        Job, 
+        Job,
         AligmentScoreParameters,
-        ExcludeFragmentsParameters, 
+        ExcludeFragmentsParameters,
         FilterByTaxonomyParameters,
         SequenceLengthParameters,
     ):
@@ -323,6 +423,15 @@ class ESTSSNFinalizationJob(
         "polymorphic_load": "selectin",
         "polymorphic_identity": "est_ssn_finalization"
     }
+    # assign a class variable to contain parameters that have relevance to the
+    # nextflow pipeline(s); gathers all mixin classes' parameters too
+    _parameter_attrs: ClassVar[set[str]] = Job._parameter_attrs.union(
+        AligmentScoreParameters._parameter_attrs,
+        ExcludeFragmentsParameters._parameter_attrs,
+        FilterByTaxonomyParameters._parameter_attrs,
+        SequenceLengthParameters._parameter_attrs,
+        {"computeNeighborhoodConnectivity"}
+    }
 
 class ESTNeighborhoodConnectivityJob(Job, FilenameParameters):
     """
@@ -331,10 +440,15 @@ class ESTNeighborhoodConnectivityJob(Job, FilenameParameters):
         "polymorphic_load": "selectin",
         "polymorphic_identity": "est_neighborhood_connectivity"
     }
+    # assign a class variable to contain parameters that have relevance to the
+    # nextflow pipeline(s); gathers all mixin classes' parameters too
+    _parameter_attrs: ClassVar[set[str]] = Job._parameter_attrs.union(
+        FilenameParameters._parameter_attrs,
+    }
 
 class ESTConvergenceRatioJob(
-        Job, 
-        AlignmentScoreParameters, 
+        Job,
+        AlignmentScoreParameters,
         FilenameParameters
     ):
     """
@@ -342,6 +456,12 @@ class ESTConvergenceRatioJob(
     __mapper_args__ = {
         "polymorphic_load": "selectin",
         "polymorphic_identity": "est_convergence_ratio"
+    }
+    # assign a class variable to contain parameters that have relevance to the
+    # nextflow pipeline(s); gathers all mixin classes' parameters too
+    _parameter_attrs: ClassVar[set[str]] = Job._parameter_attrs.union(
+        AlignmentScoreParameters._parameter_attrs,
+        FilenameParameters._parameter_attrs,
     }
 
 class ESTClusterAnalysisJob(Job, FilenameParameters):
@@ -353,6 +473,12 @@ class ESTClusterAnalysisJob(Job, FilenameParameters):
         "polymorphic_load": "selectin",
         "polymorphic_identity": "est_cluster_analysis"
     }
+    # assign a class variable to contain parameters that have relevance to the
+    # nextflow pipeline(s); gathers all mixin classes' parameters too
+    _parameter_attrs: ClassVar[set[str]] = Job._parameter_attrs.union(
+        FilenameParameters._parameter_attrs,
+        {"minSeqMSA","maxSeqMSA"}
+    }
 
 class ESTColorSSNJob(Job, FilenameParameters):
     """
@@ -360,6 +486,11 @@ class ESTColorSSNJob(Job, FilenameParameters):
     __mapper_args__ = {
         "polymorphic_load": "selectin",
         "polymorphic_identity": "est_color_ssn"
+    }
+    # assign a class variable to contain parameters that have relevance to the
+    # nextflow pipeline(s); gathers all mixin classes' parameters too
+    _parameter_attrs: ClassVar[set[str]] = Job._parameter_attrs.union(
+        FilenameParameters._parameter_attrs,
     }
 
 class GNTGNNJob(Job, GNTDiagramJob, FilenameParameters):
@@ -373,9 +504,16 @@ class GNTGNNJob(Job, GNTDiagramJob, FilenameParameters):
         "polymorphic_load": "selectin",
         "polymorphic_identity": "gnt_gnn"
     }
+    # assign a class variable to contain parameters that have relevance to the
+    # nextflow pipeline(s); gathers all mixin classes' parameters too
+    _parameter_attrs: ClassVar[set[str]] = Job._parameter_attrs.union(
+        GNTDiagramJob._parameter_attrs,
+        FilenameParameters._parameter_attrs,
+        {"cooccurrence","neighborhood_size"}
+    }
 
 class GNTDiagramBlastJob(
-        Job, 
+        Job,
         GNTDiagramJob,
         BlastSequenceParameters,
         ExcludeFragmentsParameters,
@@ -387,6 +525,14 @@ class GNTDiagramBlastJob(
         "polymorphic_load": "selectin",
         "polymorphic_identity": "gnt_diagram_blast"
     }
+    # assign a class variable to contain parameters that have relevance to the
+    # nextflow pipeline(s); gathers all mixin classes' parameters too
+    _parameter_attrs: ClassVar[set[str]] = Job._parameter_attrs.union(
+        GNTDiagramJob._parameter_attrs,
+        BlastSequenceParameters._parameter_attrs,
+        ExcludeFragmentsParameters._parameter_attrs,
+        SequenceDatabaseParameters._parameter_attrs,
+    }
 
 class GNTDiagramFastaJob(Job, GNTDiagramJob, FilenameParameters):
     """
@@ -395,9 +541,15 @@ class GNTDiagramFastaJob(Job, GNTDiagramJob, FilenameParameters):
         "polymorphic_load": "selectin",
         "polymorphic_identity": "gnt_diagram_fasta"
     }
+    # assign a class variable to contain parameters that have relevance to the
+    # nextflow pipeline(s); gathers all mixin classes' parameters too
+    _parameter_attrs: ClassVar[set[str]] = Job._parameter_attrs.union(
+        GNTDiagramJob._parameter_attrs,
+        FilenameParameters._parameter_attrs,
+    }
 
 class GNTDiagramSequenceIdJob(
-        Job, 
+        Job,
         GNTDiagramJob,
         ExcludeFragmentsParameters,
         FilenameParameters,
@@ -409,6 +561,14 @@ class GNTDiagramSequenceIdJob(
         "polymorphic_load": "selectin",
         "polymorphic_identity": "gnt_diagram_sequence_id"
     }
+    # assign a class variable to contain parameters that have relevance to the
+    # nextflow pipeline(s); gathers all mixin classes' parameters too
+    _parameter_attrs: ClassVar[set[str]] = Job._parameter_attrs.union(
+        GNTDiagramJob._parameter_attrs,
+        ExcludeFragmentsParameters._parameter_attrs,
+        FilenameParameters._parameter_attrs,
+        SequenceDatabaseParameters._parameter_attrs,
+    }
 
 class GNTViewDiagramJob(Job, FilenameParameters):
     """
@@ -417,9 +577,14 @@ class GNTViewDiagramJob(Job, FilenameParameters):
         "polymorphic_load": "selectin",
         "polymorphic_identity": "gnt_view_diagram"
     }
+    # assign a class variable to contain parameters that have relevance to the
+    # nextflow pipeline(s); gathers all mixin classes' parameters too
+    _parameter_attrs: ClassVar[set[str]] = Job._parameter_attrs.union(
+        FilenameParameters._parameter_attrs,
+    }
 
 class CGFPIdentifyJob(
-        Job, 
+        Job,
         FilenameParameters,
         SearchParmeters,
         SequenceLengthParameters,
@@ -432,9 +597,16 @@ class CGFPIdentifyJob(
         "polymorphic_load": "selectin",
         "polymorphic_identity": "cgfp_identify"
     }
+    # assign a class variable to contain parameters that have relevance to the
+    # nextflow pipeline(s); gathers all mixin classes' parameters too
+    _parameter_attrs: ClassVar[set[str]] = Job._parameter_attrs.union(
+        FilenameParameters._parameter_attrs,
+        SearchParmeters._parameter_attrs,
+        SequenceLengthParameters._parameter_attrs,
+        {"referenceDatabase","cdhitSequenceIdentity"}
+    }
 
 class CGFPQuantifyJob(Job,SearchParmeters):
-        
     """
     """
     metagenomes: Mapped[str | None]
@@ -442,26 +614,41 @@ class CGFPQuantifyJob(Job,SearchParmeters):
         "polymorphic_load": "selectin",
         "polymorphic_identity": "cgfp_quantify"
     }
+    # assign a class variable to contain parameters that have relevance to the
+    # nextflow pipeline(s); gathers all mixin classes' parameters too
+    _parameter_attrs: ClassVar[set[str]] = Job._parameter_attrs.union(
+        SearchParmeters._parameter_attrs,
+        {"metagenomes"}
+    }
 
 class TaxonomyAccessionJob(
         Job,
-        ExcludeFragmentsParameters, 
-        FilterByFamiliesParameters, 
+        ExcludeFragmentsParameters,
+        FilterByFamiliesParameters,
         FilterByTaxonomyParameters,
-        FilenameParameters, 
+        FilenameParameters,
         SequenceDatabaseParameters
-    ):  
+    ):
     """
     """
     __mapper_args__ = {
         "polymorphic_load": "selectin",
         "polymorphic_identity": "taxonomy_accession"
     }
+    # assign a class variable to contain parameters that have relevance to the
+    # nextflow pipeline(s); gathers all mixin classes' parameters too
+    _parameter_attrs: ClassVar[set[str]] = Job._parameter_attrs.union(
+        ExcludeFragmentsParameters._parameter_attrs,
+        FilterByFamiliesParameters._parameter_attrs,
+        FilterByTaxonomyParameters._parameter_attrs,
+        FilenameParameters._parameter_attrs,
+        SequenceDatabaseParameters._parameter_attrs,
+    }
 
 class TaxonomyFamiliesJob(
         Job,
-        ExcludeFragmentsParameters, 
-        FilterByFamiliesParameters, 
+        ExcludeFragmentsParameters,
+        FilterByFamiliesParameters,
         FilterByTaxonomyParameters,
         SequenceLengthParameters,
     ):
@@ -471,19 +658,35 @@ class TaxonomyFamiliesJob(
         "polymorphic_load": "selectin",
         "polymorphic_identity": "taxonomy_families"
     }
+    # assign a class variable to contain parameters that have relevance to the
+    # nextflow pipeline(s); gathers all mixin classes' parameters too
+    _parameter_attrs: ClassVar[set[str]] = Job._parameter_attrs.union(
+        ExcludeFragmentsParameters._parameter_attrs,
+        FilterByFamiliesParameters._parameter_attrs,
+        FilterByTaxonomyParameters._parameter_attrs,
+        SequenceLengthParameters._parameter_attrs,
+    }
 
 class TaxonomyFastaJob(
         Job,
-        ExcludeFragmentsParameters, 
-        FilterByFamiliesParameters, 
+        ExcludeFragmentsParameters,
+        FilenameParameters,
+        FilterByFamiliesParameters,
         FilterByTaxonomyParameters,
-        FilenameParameters
     ):
     """
     """
     __mapper_args__ = {
         "polymorphic_load": "selectin",
         "polymorphic_identity": "taxonomy_fasta"
+    }
+    # assign a class variable to contain parameters that have relevance to the
+    # nextflow pipeline(s); gathers all mixin classes' parameters too
+    _parameter_attrs: ClassVar[set[str]] = Job._parameter_attrs.union(
+        ExcludeFragmentsParameters._parameter_attrs,
+        FilenameParameters._parameter_attrs,
+        FilterByFamiliesParameters._parameter_attrs,
+        FilterByTaxonomyParameters._parameter_attrs,
     }
 
 ################################################################################
