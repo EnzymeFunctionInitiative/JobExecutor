@@ -3,7 +3,7 @@ from datetime import datetime
 from enum import Flag
 import json
 
-from typing import ClassVar
+from typing import ClassVar, Dict, Any
 
 import sqlalchemy
 
@@ -29,21 +29,21 @@ class Job(Base):
     
     # general parameters
     job_id: Mapped[int] = mapped_column("id", primary_key=True)
-    user_id: Mapped[int | None]     # mapped to user_id from the migration files but "user" in the entity files
     uuid: Mapped[str] = mapped_column(nullable=False)
-    status: Mapped[str] = mapped_column(nullable=False)
-    #status: Mapped[Status] = mapped_column(FlagEnumType(Status), nullable=False)
+    status: Mapped[Status] = mapped_column(FlagEnumType(Status), nullable=False)
+    isPublic: Mapped[bool] = mapped_column(nullable=False)
+    job_type: Mapped[str] = mapped_column(nullable=False) # used as the polymorphic_on attribute
+    
+    user_id: Mapped[int | None]     # mapped to user_id from the migration files but "user" in the entity files
     timeCreated: Mapped[datetime | None]    # should be `= mapped_column(nullable=False)`?
     timeStarted: Mapped[datetime | None]
     timeCompleted: Mapped[datetime | None]
     efi_db_version: Mapped[str | None]
-    isPublic: Mapped[bool] = mapped_column(nullable=False)
     isExample: Mapped[bool | None]   # should this be nullable?
     parentJob_id: Mapped[int | None]
     schedulerJobId: Mapped[int | None]
     jobName: Mapped[str | None]
     results: Mapped[str | None] # NOTE: gonna change?
-    job_type: Mapped[str] = mapped_column(nullable=False) # used as the polymorphic_on attribute
     __mapper_args__ = {
         "polymorphic_on": "job_type",
         "polymorphic_identity": "job",
@@ -51,10 +51,10 @@ class Job(Base):
 
     # assign a class variable to contain parameters that have relevance to the
     # nextflow pipeline(s)
-    _parameter_attrs: ClassVar[set[str]] = frozenset(
+    _parameter_attrs: ClassVar[set[str]] = frozenset([
         "job_id",
         "jobName",
-    )
+    ])
 
     def __repr__(self):
         if self.status in Status.COMPLETED:
@@ -65,7 +65,7 @@ class Job(Base):
             completed_string = ""
         return (f"<self.__class__.__name__(id={self.job_id},"
                 + f" status='{self.status}',"
-                + f" efi_type='{self.efi_type}',"
+                + f" job_type='{self.job_type}',"
                 + f" timeCreated='{self.timeCreated}'"
                 + f" {completed_string})>")
 
@@ -88,7 +88,7 @@ class AlignmentScoreParameters:
     )
     # assign a class variable to contain parameters that have relevance to the
     # nextflow pipeline(s)
-    _parameter_attrs: ClassVar[set[str]] = frozenset("alignmentScore")
+    _parameter_attrs: ClassVar[set[str]] = frozenset(["alignmentScore"])
 
 class BlastSequenceParameters:
     blastSequence: Mapped[str | None] = mapped_column(
@@ -96,7 +96,7 @@ class BlastSequenceParameters:
     )
     # assign a class variable to contain parameters that have relevance to the
     # nextflow pipeline(s)
-    _parameter_attrs: ClassVar[set[str]] = frozenset("blastSequence")
+    _parameter_attrs: ClassVar[set[str]] = frozenset(["blastSequence"])
 
 # temp name for this. match to the Trait.php file on efi-web (assuming its made)
 class SequenceLengthParameters:
@@ -108,7 +108,7 @@ class SequenceLengthParameters:
     )
     # assign a class variable to contain parameters that have relevance to the
     # nextflow pipeline(s)
-    _parameter_attrs: ClassVar[set[str]] = frozenset("minLength", "maxLength")
+    _parameter_attrs: ClassVar[set[str]] = frozenset(["minLength", "maxLength"])
 
 class ProteinFamilyAdditionParameters:
     families: Mapped[str | None] = mapped_column(
@@ -125,12 +125,12 @@ class ProteinFamilyAdditionParameters:
     )
     # assign a class variable to contain parameters that have relevance to the
     # nextflow pipeline(s)
-    _parameter_attrs: ClassVar[set[str]] = frozenset(
+    _parameter_attrs: ClassVar[set[str]] = frozenset([
         "families",
         "sequence_version",
         "fraction",
         "numUnirefClusters"
-    )
+    ])
 
 class DomainBoundariesParameters:
     domain: Mapped[bool | None] = mapped_column(
@@ -141,7 +141,7 @@ class DomainBoundariesParameters:
     )
     # assign a class variable to contain parameters that have relevance to the
     # nextflow pipeline(s)
-    _parameter_attrs: ClassVar[set[str]] = frozenset("domain", "domainRegion")
+    _parameter_attrs: ClassVar[set[str]] = frozenset(["domain", "domainRegion"])
 
 class ExcludeFragmentsParameters:
     excludeFragments: Mapped[bool | None] = mapped_column(
@@ -149,7 +149,7 @@ class ExcludeFragmentsParameters:
     )
     # assign a class variable to contain parameters that have relevance to the
     # nextflow pipeline(s)
-    _parameter_attrs: ClassVar[set[str]] = frozenset("excludeFragments")
+    _parameter_attrs: ClassVar[set[str]] = frozenset(["excludeFragments"])
 
 class FilterByTaxonomyParameters:
     taxSearch: Mapped[str | None] = mapped_column(
@@ -160,10 +160,10 @@ class FilterByTaxonomyParameters:
     )
     # assign a class variable to contain parameters that have relevance to the
     # nextflow pipeline(s)
-    _parameter_attrs: ClassVar[set[str]] = frozenset(
+    _parameter_attrs: ClassVar[set[str]] = frozenset([
         "taxSearch", 
         "taxSearchName"
-    )
+    ])
 
 class FilterByFamiliesParameters:
     filterByFamilies: Mapped[str | None] = mapped_column(
@@ -171,7 +171,7 @@ class FilterByFamiliesParameters:
     )
     # assign a class variable to contain parameters that have relevance to the
     # nextflow pipeline(s)
-    _parameter_attrs: ClassVar[set[str]] = frozenset("filterByFamilies")
+    _parameter_attrs: ClassVar[set[str]] = frozenset(["filterByFamilies"])
 
 class UserUploadedIdsParameters:
     # NOTE: these are results parameters?
@@ -181,12 +181,13 @@ class UserUploadedIdsParameters:
     numUnmatchedIds: Mapped[int | None] = mapped_column(
         use_existing_column=True
     )
+    _parameter_attrs: ClassVar[set[str]] = frozenset([])
     ## assign a class variable to contain parameters that have relevance to the
     ## nextflow pipeline(s)
-    #_parameter_attrs: ClassVar[set[str]] = frozenset(
+    #_parameter_attrs: ClassVar[set[str]] = frozenset([
     #    "numMatchedIds", 
     #    "numUnmatchedIds"
-    #)
+    #])
 
 class FilenameParameters:
     uploadedFilename: Mapped[str | None] = mapped_column(
@@ -200,11 +201,11 @@ class FilenameParameters:
     )
     # assign a class variable to contain parameters that have relevance to the
     # nextflow pipeline(s)
-    _parameter_attrs: ClassVar[set[str]] = frozenset(
+    _parameter_attrs: ClassVar[set[str]] = frozenset([
         "uploadedFilename",
         "jobFilename",
         "updatedAt"
-    )
+    ])
 
 class SequenceDatabaseParameters:
     blastEValue: Mapped[int | None] = mapped_column(
@@ -218,11 +219,11 @@ class SequenceDatabaseParameters:
     )
     # assign a class variable to contain parameters that have relevance to the
     # nextflow pipeline(s)
-    _parameter_attrs: ClassVar[set[str]] = frozenset(
+    _parameter_attrs: ClassVar[set[str]] = frozenset([
         "blastEValue",
         "maxBlastSequences",
         "sequenceDatabase"
-    )
+    ])
 
 class SearchParameters:
     searchType: Mapped[str | None] = mapped_column(
@@ -230,7 +231,7 @@ class SearchParameters:
     )
     # assign a class variable to contain parameters that have relevance to the
     # nextflow pipeline(s)
-    _parameter_attrs: ClassVar[set[str]] = frozenset("searchType")
+    _parameter_attrs: ClassVar[set[str]] = frozenset(["searchType"])
 
 class ESTGenerateJob:
     allByAllBlastEValue: Mapped[int | None] = mapped_column(
@@ -257,7 +258,7 @@ class ESTGenerateJob:
     )
     # assign a class variable to contain parameters that have relevance to the
     # nextflow pipeline(s)
-    _parameter_attrs: ClassVar[set[str]] = frozenset("allByAllBlastEValue")
+    _parameter_attrs: ClassVar[set[str]] = frozenset(["allByAllBlastEValue"])
 
 class GNTDiagramJob:
     neighborhoodWindowSize: Mapped[int | None] = mapped_column(
@@ -265,7 +266,7 @@ class GNTDiagramJob:
     )
     # assign a class variable to contain parameters that have relevance to the
     # nextflow pipeline(s)
-    _parameter_attrs: ClassVar[set[str]] = frozenset("neighborhoodWindowSize")
+    _parameter_attrs: ClassVar[set[str]] = frozenset(["neighborhoodWindowSize"])
 
 ###############################################################################
 # polymorphic_identity classes
@@ -273,7 +274,7 @@ class GNTDiagramJob:
 class ESTGenerateFastaJob(
         Job,
         ESTGenerateJob,
-        FilenameParameters
+        FilenameParameters,
         FilterByFamiliesParameters,
         ProteinFamilyAdditionParameters,
         UserUploadedIdsParameters,
@@ -288,11 +289,11 @@ class ESTGenerateFastaJob(
     # nextflow pipeline(s); gathers all mixin classes' parameters too
     _parameter_attrs: ClassVar[set[str]] = Job._parameter_attrs.union(
         ESTGenerateJob._parameter_attrs,
-        FilenameParameters._parameter_attrs
+        FilenameParameters._parameter_attrs,
         FilterByFamiliesParameters._parameter_attrs,
         ProteinFamilyAdditionParameters._parameter_attrs,
         UserUploadedIdsParameters._parameter_attrs,
-        frozenset("inputFasta")
+        frozenset(["inputFasta"])
     )
 
 class ESTGenerateFamiliesJob(
@@ -371,12 +372,12 @@ class ESTGenerateAccessionJob(
         FilterByTaxonomyParameters._parameter_attrs,
         ProteinFamilyAdditionParameters._parameter_attrs,
         UserUploadedIdsParameters._parameter_attrs,
-        frozenset("domainFamily")
+        frozenset(["domainFamily"])
     )
 
 class ESTSSNFinalizationJob(
         Job,
-        AligmentScoreParameters,
+        AlignmentScoreParameters,
         ExcludeFragmentsParameters,
         FilterByTaxonomyParameters,
         SequenceLengthParameters,
@@ -390,7 +391,7 @@ class ESTSSNFinalizationJob(
     # assign a class variable to contain parameters that have relevance to the
     # nextflow pipeline(s); gathers all mixin classes' parameters too
     _parameter_attrs: ClassVar[set[str]] = Job._parameter_attrs.union(
-        AligmentScoreParameters._parameter_attrs,
+        AlignmentScoreParameters._parameter_attrs,
         ExcludeFragmentsParameters._parameter_attrs,
         FilterByTaxonomyParameters._parameter_attrs,
         SequenceLengthParameters._parameter_attrs,
@@ -438,7 +439,7 @@ class ESTClusterAnalysisJob(Job, FilenameParameters):
     # nextflow pipeline(s); gathers all mixin classes' parameters too
     _parameter_attrs: ClassVar[set[str]] = Job._parameter_attrs.union(
         FilenameParameters._parameter_attrs,
-        frozenset("minSeqMSA","maxSeqMSA")
+        frozenset(["minSeqMSA","maxSeqMSA"])
     )
 
 class ESTColorSSNJob(Job, FilenameParameters):
@@ -468,7 +469,7 @@ class GNTGNNJob(Job, GNTDiagramJob, FilenameParameters):
     _parameter_attrs: ClassVar[set[str]] = Job._parameter_attrs.union(
         GNTDiagramJob._parameter_attrs,
         FilenameParameters._parameter_attrs,
-        frozenset("cooccurrence","neighborhood_size")
+        frozenset(["cooccurrence","neighborhood_size"])
     )
 
 class GNTDiagramBlastJob(
@@ -510,7 +511,7 @@ class GNTDiagramSequenceIdJob(
         GNTDiagramJob,
         ExcludeFragmentsParameters,
         FilenameParameters,
-        SequenceDatabaseParameters
+        SequenceDatabaseParameters,
     ):
     __mapper_args__ = {
         "polymorphic_load": "selectin",
@@ -541,7 +542,7 @@ class GNTViewDiagramJob(Job, FilenameParameters):
 class CGFPIdentifyJob(
         Job,
         FilenameParameters,
-        SearchParmeters,
+        SearchParameters,
         SequenceLengthParameters,
     ):
     __mapper_args__ = {
@@ -555,12 +556,12 @@ class CGFPIdentifyJob(
     # nextflow pipeline(s); gathers all mixin classes' parameters too
     _parameter_attrs: ClassVar[set[str]] = Job._parameter_attrs.union(
         FilenameParameters._parameter_attrs,
-        SearchParmeters._parameter_attrs,
+        SearchParameters._parameter_attrs,
         SequenceLengthParameters._parameter_attrs,
-        frozenset("referenceDatabase","cdhitSequenceIdentity")
+        frozenset(["referenceDatabase","cdhitSequenceIdentity"])
     )
 
-class CGFPQuantifyJob(Job,SearchParmeters):
+class CGFPQuantifyJob(Job,SearchParameters):
     __mapper_args__ = {
         "polymorphic_load": "selectin",
         "polymorphic_identity": "cgfp_quantify"
@@ -570,8 +571,8 @@ class CGFPQuantifyJob(Job,SearchParmeters):
     # assign a class variable to contain parameters that have relevance to the
     # nextflow pipeline(s); gathers all mixin classes' parameters too
     _parameter_attrs: ClassVar[set[str]] = Job._parameter_attrs.union(
-        SearchParmeters._parameter_attrs,
-        frozenset("metagenomes")
+        SearchParameters._parameter_attrs,
+        frozenset(["metagenomes"])
     )
 
 class TaxonomyAccessionJob(
@@ -580,7 +581,7 @@ class TaxonomyAccessionJob(
         FilterByFamiliesParameters,
         FilterByTaxonomyParameters,
         FilenameParameters,
-        SequenceDatabaseParameters
+        SequenceDatabaseParameters,
     ):
     __mapper_args__ = {
         "polymorphic_load": "selectin",
