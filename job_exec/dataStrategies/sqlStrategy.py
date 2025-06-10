@@ -212,7 +212,7 @@ class SQLStrategy(BaseDataStrategy):
             return
 
         for key, value in update_dict.items():
-            if key not in self.updatable_attrs: 
+            if key not in job_obj._updatable_attrs: 
                 continue
             setattr(job_obj, key, value)
         

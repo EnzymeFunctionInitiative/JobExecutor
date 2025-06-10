@@ -1,6 +1,8 @@
 
 from datetime import datetime
 
+from typing import ClassVar
+
 import sqlalchemy
 
 from sqlalchemy import func
@@ -45,7 +47,23 @@ class Job(Base):
     results: Mapped[str | None]
     email: Mapped[str]
     parentJob_id: Mapped[int | None]
-  
+ 
+    # assign a class variable to contain parameters that have relevance to the
+    # nextflow pipeline(s)
+    _parameter_attrs: ClassVar[set[str]] = frozenset([
+        "job_id",
+        "params",
+    ])
+
+    # assign a class variable to contain parameters that can be updated as jobs
+    # are processed
+    _updatable_attrs: ClassVar[set[str]] = frozenset([
+        "status",
+        "timeStarted",
+        "timeCompleted",
+        "results",
+    ])
+
     def __repr__(self):
         if self.status in Status.COMPLETED:
             completed_string = f"timeStarted='{self.timeStarted}', timeCompleted='{self.timeCompleted}'"

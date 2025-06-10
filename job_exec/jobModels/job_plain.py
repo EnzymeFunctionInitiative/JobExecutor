@@ -1,4 +1,6 @@
 
+from typing import ClassVar
+
 class Job:
     def __init__(self, **kwargs):
         """
@@ -24,4 +26,7 @@ class Job:
         repr_str += ">"
         return repr_str
 
+
+    _parameter_attrs = frozenset([])
+    _updatable_attrs = frozenset(["status","timeStarted","timeCompleted"])
 
