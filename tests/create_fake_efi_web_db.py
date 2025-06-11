@@ -16,7 +16,7 @@ job_db = SQLStrategy(config)
 job_db.load_data()
 
 row0 = ESTGenerateFamiliesJob(
-    job_id = 1,
+    id = 1,
     uuid = "aaa",
     status = Status.NEW,
     isPublic = False,
