@@ -7,8 +7,8 @@ class Job:
         Create a job object having attributes associated with each keyword arg
         and associated values
         """
-        if "job_id" not in kwargs or "status" not in kwargs:
-            raise ValueError("Missing required fields: 'job_id' and 'status'")
+        if "id" not in kwargs or "status" not in kwargs:
+            raise ValueError("Missing required fields: 'id' and 'status'")
         # update the __dict__ to cleanly implement all attributes
         self.__dict__.update(kwargs)
         
@@ -16,7 +16,7 @@ class Job:
         self.results = {}
     
     def __repr__(self):
-        repr_str =  f"<Job job_id={self.job_id}, status={self.status}"
+        repr_str =  f"<Job id={self.id}, status={self.status}"
         if self.__dict__.get("timeCreated"):
             repr_str += f", timeCreated={self.timeCreated}"
         elif self.__dict__.get("timeStarted"):
@@ -26,7 +26,4 @@ class Job:
         repr_str += ">"
         return repr_str
 
-
-    _parameter_attrs = frozenset([])
-    _updatable_attrs = frozenset(["status","timeStarted","timeCompleted"])
 

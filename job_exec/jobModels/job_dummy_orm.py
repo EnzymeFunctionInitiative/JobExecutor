@@ -1,10 +1,8 @@
 
 from datetime import datetime
-
-from typing import ClassVar
+from typing import Dict, Any
 
 import sqlalchemy
-
 from sqlalchemy import func
 from sqlalchemy.orm import DeclarativeBase, mapped_column, Mapped
 
@@ -30,39 +28,37 @@ class Job(Base):
     # enables skipping the `mapped_column()` call. The `Mapped` annotation can
     # be used to set datatype _and_ nullability for the column. Default for 
     # nullable is True for non-primary key columns.
-    job_id: Mapped[int] = mapped_column("id", primary_key=True)
+    id: Mapped[int] = mapped_column(
+        primary_key=True,
+        info = {"is_parameter": True, "pipeline_key": "job_id"}
+    )
     user_id: Mapped[int] = mapped_column(nullable=False)
-    uuid: Mapped[str] = mapped_column(nullable=False)   # typing.UUID?
-    #status: Mapped[str] = mapped_column(nullable=False)
-    status: Mapped[Status] = mapped_column(FlagEnumType(Status), nullable=False)
+    uuid: Mapped[str] = mapped_column(nullable=False)
+    status: Mapped[Status] = mapped_column(
+        FlagEnumType(Status),
+        nullable=False,
+        info = {"is_updatable": True}
+    )
     efi_type: Mapped[str] = mapped_column("type", nullable=False)
     timeCreated: Mapped[datetime] = mapped_column(
         nullable=False, 
         server_default=func.now()
     )
-    timeStarted: Mapped[datetime | None]
-    timeCompleted: Mapped[datetime | None]
+    timeStarted: Mapped[datetime | None] = mapped_column(
+        info = {"is_updatable": True}
+    )
+    timeCompleted: Mapped[datetime | None] = mapped_column(
+        info = {"is_updatable": True}
+    )
     dbVersion: Mapped[str]
-    params: Mapped[str | None]
-    results: Mapped[str | None]
+    params: Mapped[str | None] = mapped_column(
+        info = {"is_parameter": True, "pipeline_key": "parameters"}
+    )
+    results: Mapped[str | None] = mapped_column(
+        info = {"is_updatable": True}
+    )
     email: Mapped[str]
     parentJob_id: Mapped[int | None]
- 
-    # assign a class variable to contain parameters that have relevance to the
-    # nextflow pipeline(s)
-    _parameter_attrs: ClassVar[set[str]] = frozenset([
-        "job_id",
-        "params",
-    ])
-
-    # assign a class variable to contain parameters that can be updated as jobs
-    # are processed
-    _updatable_attrs: ClassVar[set[str]] = frozenset([
-        "status",
-        "timeStarted",
-        "timeCompleted",
-        "results",
-    ])
 
     def __repr__(self):
         if self.status in Status.COMPLETED:
@@ -71,10 +67,22 @@ class Job(Base):
             completed_string = f"timeStarted='{self.timeStarted}'"
         else:
             completed_string = ""
-        return (f"<Job(id={self.job_id}," 
+        return (f"<Job(id={self.id}," 
                 + f" status='{self.status}'," 
                 + f" efi_type='{self.efi_type}'," 
                 + f" timeCreated='{self.timeCreated}'" 
                 + f" {completed_string})>")
 
+    def get_parameters_dict(self) -> Dict[str, Any]:
+        """
+        Create a dictionary of attributes that should be written to a
+        params.yaml file.
+        """
+        mapper = inspect(self.__class__)
+        return {
+            key: value
+            for key, value in mapper.attrs.items()  # need to check that .items() actually returns key and value
+            if isinstance(attr, MappedColumn)
+            and attr.column.info.get("is_parameter")
+        }
 

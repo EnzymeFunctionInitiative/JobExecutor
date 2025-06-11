@@ -41,7 +41,7 @@ def test_data_handler(
             job, 
             {"status": Status.NEW, "results": "new value"}
         )
-        assert data_handler._strategy.data[job.job_id]["status"] == Status.NEW
+        assert data_handler._strategy.data[job.id]["status"] == Status.NEW
 
 
 import dataStrategies.sqlStrategy as data_strategy

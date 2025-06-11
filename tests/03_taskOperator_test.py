@@ -21,7 +21,7 @@ import jobModels.job_plain as job_model
 
 # prep the Job objects
 temp_jobs = [
-    job_model.Job(**{"job_id":i, "status":status, "something":"else"})
+    job_model.Job(**{"id":i, "status":status, "something":"else"})
     for i, status in enumerate([Status.NEW, Status.RUNNING])
 ]
 

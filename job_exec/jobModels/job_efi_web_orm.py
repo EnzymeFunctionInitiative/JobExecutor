@@ -1,13 +1,8 @@
 
 from datetime import datetime
 from enum import Flag
-import json
-
-from typing import ClassVar, Dict, Any
-
+from typing import Dict, Any
 import sqlalchemy
-
-from sqlalchemy import func
 from sqlalchemy.orm import DeclarativeBase, mapped_column, Mapped
 
 from constants import Status
@@ -28,43 +23,41 @@ class Job(Base):
     # nullable is True for non-primary key columns.
     
     # general parameters
-    job_id: Mapped[int] = mapped_column("id", primary_key=True)
+    id: Mapped[int] = mapped_column(
+        primary_key=True,
+        info = {"is_parameter": True, "pipeline_key": "job_id"}
+    )
     uuid: Mapped[str] = mapped_column(nullable=False)
-    status: Mapped[Status] = mapped_column(FlagEnumType(Status), nullable=False)
+    status: Mapped[Status] = mapped_column(
+        FlagEnumType(Status),
+        nullable=False,
+        info = {"is_updatable": True}
+    )
     isPublic: Mapped[bool] = mapped_column(nullable=False)
-    job_type: Mapped[str] = mapped_column(nullable=False) # used as the polymorphic_on attribute
-    
-    user_id: Mapped[int | None]     # mapped to user_id from the migration files but "user" in the entity files
-    timeCreated: Mapped[datetime | None]    # should be `= mapped_column(nullable=False)`?
-    timeStarted: Mapped[datetime | None]
-    timeCompleted: Mapped[datetime | None]
-    efi_db_version: Mapped[str | None]
-    isExample: Mapped[bool | None]   # should this be nullable?
+    job_type: Mapped[str] = mapped_column(nullable=False)
+    user_id: Mapped[int | None]
+    timeCreated: Mapped[datetime | None]
+    timeStarted: Mapped[datetime | None] = mapped_column(
+        info = {"is_updatable": True}
+    )
+    timeCompleted: Mapped[datetime | None] = mapped_column(
+        info = {"is_updatable": True}
+    )
+    efi_db_version: Mapped[str | None] = mapped_column(
+        info = {"is_parameter": True, "pipeline_key": "job_id"}
+    )
+    isExample: Mapped[bool | None]
     parentJob_id: Mapped[int | None]
-    schedulerJobId: Mapped[int | None]
-    jobName: Mapped[str | None]
-    results: Mapped[str | None] # NOTE: gonna change?
+    schedulerJobId: Mapped[int | None] = mapped_column(
+        info = {"is_updatable": True}
+    )
+    jobName: Mapped[str | None] = mapped_column(info = {"is_parameter": True})
+    results: Mapped[str | None] = mapped_column(info = {"is_updatable": True})
+    
     __mapper_args__ = {
         "polymorphic_on": "job_type",
         "polymorphic_identity": "job",
     }
-
-    # assign a class variable to contain parameters that have relevance to the
-    # nextflow pipeline(s)
-    _parameter_attrs: ClassVar[set[str]] = frozenset([
-        "job_id",
-        "jobName",
-    ])
-
-    # assign a class variable to contain parameters that can be updated as jobs
-    # are processed
-    _updatable_attrs: ClassVar[set[str]] = frozenset([
-        "status",
-        "timeStarted",
-        "timeCompleted",
-        "schedulerJobId",
-        "results",  # NOTES: likely to change
-    ])
 
     def __repr__(self):
         if self.status in Status.COMPLETED:
@@ -73,7 +66,7 @@ class Job(Base):
             completed_string = f"timeStarted='{self.timeStarted}'"
         else:
             completed_string = ""
-        return (f"<self.__class__.__name__(id={self.job_id},"
+        return (f"<self.__class__.__name__(id={self.id},"
                 + f" status='{self.status}',"
                 + f" job_type='{self.job_type}',"
                 + f" timeCreated='{self.timeCreated}'"
@@ -84,251 +77,186 @@ class Job(Base):
         Create a dictionary of attributes that should be written to a
         params.yaml file.
         """
-        return {key: getattr(self, key) for key in self._parameter_attrs}
+        mapper = inspect(self.__class__)
+        return {
+            key: value
+            for key, value in mapper.attrs.items()  # need to check that .items() actually returns key and value
+            if isinstance(attr, MappedColumn)
+            and attr.column.info.get("is_parameter")
+        }
 
 ################################################################################
 # Mixin Column Classes
 
-# columns shared across multiple mixin classes:
-# - neighborhoodSize and neighborhoodWindowSize
-
 class AlignmentScoreParameters:
     alignmentScore: Mapped[int | None] = mapped_column(
-        use_existing_column=True
+        use_existing_column=True,
+        info = {"is_parameter": True, "pipeline_key": "filter"}
     )
-    # assign a class variable to contain parameters that have relevance to the
-    # nextflow pipeline(s)
-    _parameter_attrs: ClassVar[set[str]] = frozenset(["alignmentScore"])
-    # assign a class variable to contain parameters that can be updated as jobs
-    # are processed
-    _updatable_attrs: ClassVar[set[str]] = frozenset([])
 
 class BlastSequenceParameters:
     blastSequence: Mapped[str | None] = mapped_column(
-        use_existing_column=True
+        use_existing_column=True,
+        info = {"is_parameter": True, "pipeline_key": "blast_query_file"}
     )
-    # assign a class variable to contain parameters that have relevance to the
-    # nextflow pipeline(s)
-    _parameter_attrs: ClassVar[set[str]] = frozenset(["blastSequence"])
-    # assign a class variable to contain parameters that can be updated as jobs
-    # are processed
-    _updatable_attrs: ClassVar[set[str]] = frozenset([])
 
-# temp name for this. match to the Trait.php file on efi-web (assuming its made)
 class SequenceLengthParameters:
     minLength: Mapped[int | None] = mapped_column(
-        use_existing_column=True
+        use_existing_column=True,
+        info = {"is_parameter": True, "pipeline_key": "min_length"}
     )
     maxLength: Mapped[int | None] = mapped_column(
-        use_existing_column=True
+        use_existing_column=True,
+        info = {"is_parameter": True, "pipeline_key": "max_length"}
     )
-    # assign a class variable to contain parameters that have relevance to the
-    # nextflow pipeline(s)
-    _parameter_attrs: ClassVar[set[str]] = frozenset(["minLength", "maxLength"])
-    # assign a class variable to contain parameters that can be updated as jobs
-    # are processed
-    _updatable_attrs: ClassVar[set[str]] = frozenset([])
 
 class ProteinFamilyAdditionParameters:
     families: Mapped[str | None] = mapped_column(
-        use_existing_column=True
+        use_existing_column=True,
+        info = {"is_parameter": True}
     )
     sequence_version: Mapped[str | None] = mapped_column(
-        use_existing_column=True
+        use_existing_column=True,
+        info = {"is_parameter": True}
     )
-    fraction: Mapped[int | None] = mapped_column(    # NOTE: should this be a float? how is this handled on the backend?
-        use_existing_column=True
+    fraction: Mapped[int | None] = mapped_column(
+        use_existing_column=True,
+        # NOTE: does this map to a params in the nextflow pipeline(s)
+        info = {"is_parameter": True}
     )
     numUnirefClusters: Mapped[int | None] = mapped_column(
-        use_existing_column=True
+        use_existing_column=True,
+        # NOTE: does this map to a params in the nextflow pipeline(s)
+        info = {"is_parameter": True}
     )
-    # assign a class variable to contain parameters that have relevance to the
-    # nextflow pipeline(s)
-    _parameter_attrs: ClassVar[set[str]] = frozenset([
-        "families",
-        "sequence_version",
-        "fraction",
-        "numUnirefClusters"
-    ])
-    # assign a class variable to contain parameters that can be updated as jobs
-    # are processed
-    _updatable_attrs: ClassVar[set[str]] = frozenset([])
 
 class DomainBoundariesParameters:
     domain: Mapped[bool | None] = mapped_column(
-        use_existing_column=True
+        use_existing_column=True,
+        info = {"is_parameter": True}
     )
     domainRegion: Mapped[str | None] = mapped_column(
-        use_existing_column=True
+        use_existing_column=True,
+        # NOTE: does this map to a params in the nextflow pipeline(s)
+        info = {"is_parameter": True}
     )
-    # assign a class variable to contain parameters that have relevance to the
-    # nextflow pipeline(s)
-    _parameter_attrs: ClassVar[set[str]] = frozenset(["domain", "domainRegion"])
-    # assign a class variable to contain parameters that can be updated as jobs
-    # are processed
-    _updatable_attrs: ClassVar[set[str]] = frozenset([])
 
 class ExcludeFragmentsParameters:
     excludeFragments: Mapped[bool | None] = mapped_column(
-        use_existing_column=True
+        use_existing_column=True,
+        # NOTE: does this map to a params in the nextflow pipeline(s)
+        info = {"is_parameter": True}
     )
-    # assign a class variable to contain parameters that have relevance to the
-    # nextflow pipeline(s)
-    _parameter_attrs: ClassVar[set[str]] = frozenset(["excludeFragments"])
-    # assign a class variable to contain parameters that can be updated as jobs
-    # are processed
-    _updatable_attrs: ClassVar[set[str]] = frozenset([])
 
 class FilterByTaxonomyParameters:
     taxSearch: Mapped[str | None] = mapped_column(
-        use_existing_column=True
+        use_existing_column=True,
+        # NOTE: does this map to a params in the nextflow pipeline(s)
+        info = {"is_parameter": True}
     )
     taxSearchName: Mapped[str | None] = mapped_column(
-        use_existing_column=True
+        use_existing_column=True,
+        # NOTE: does this map to a params in the nextflow pipeline(s)
+        info = {"is_parameter": True}
     )
-    # assign a class variable to contain parameters that have relevance to the
-    # nextflow pipeline(s)
-    _parameter_attrs: ClassVar[set[str]] = frozenset([
-        "taxSearch", 
-        "taxSearchName"
-    ])
-    # assign a class variable to contain parameters that can be updated as jobs
-    # are processed
-    _updatable_attrs: ClassVar[set[str]] = frozenset([])
 
 class FilterByFamiliesParameters:
     filterByFamilies: Mapped[str | None] = mapped_column(
-        use_existing_column=True
+        use_existing_column=True,
+        info = {"is_parameter": True, "pipeline_key": "filter"}
     )
-    # assign a class variable to contain parameters that have relevance to the
-    # nextflow pipeline(s)
-    _parameter_attrs: ClassVar[set[str]] = frozenset(["filterByFamilies"])
-    # assign a class variable to contain parameters that can be updated as jobs
-    # are processed
-    _updatable_attrs: ClassVar[set[str]] = frozenset([])
 
 class UserUploadedIdsParameters:
     # NOTE: these are results parameters?
     numMatchedIds: Mapped[int | None] = mapped_column(
-        use_existing_column=True
+        use_existing_column=True,
+        # NOTE: does this map to a params in the nextflow pipeline(s)
+        info = {"is_updatable": True}
     )
     numUnmatchedIds: Mapped[int | None] = mapped_column(
-        use_existing_column=True
+        use_existing_column=True,
+        # NOTE: does this map to a params in the nextflow pipeline(s)
+        info = {"is_updatable": True}
     )
-    _parameter_attrs: ClassVar[set[str]] = frozenset([])
-    ## assign a class variable to contain parameters that have relevance to the
-    ## nextflow pipeline(s)
-    #_parameter_attrs: ClassVar[set[str]] = frozenset([
-    #    "numMatchedIds", 
-    #    "numUnmatchedIds"
-    #])
-    # assign a class variable to contain parameters that can be updated as jobs
-    # are processed
-    _updatable_attrs: ClassVar[set[str]] = frozenset([
-        "numMatchedIds", 
-        "numUnmatchedIds"
-    ])
 
 class FilenameParameters:
     uploadedFilename: Mapped[str | None] = mapped_column(
-        use_existing_column=True
+        use_existing_column=True,
+        # NOTE: does this map to a params in the nextflow pipeline(s)
+        info = {"is_parameter": True}
     )
     jobFilename: Mapped[str | None] = mapped_column(
-        use_existing_column=True
+        use_existing_column=True,
+        # NOTE: does this map to a params in the nextflow pipeline(s)
+        info = {"is_parameter": True}
     )
     updatedAt: Mapped[datetime | None] = mapped_column(
-        use_existing_column=True
+        use_existing_column=True,
+        # NOTE: does this map to a params in the nextflow pipeline(s)
+        info = {"is_parameter": True, "is_updatable": True}
     )
-    # assign a class variable to contain parameters that have relevance to the
-    # nextflow pipeline(s)
-    _parameter_attrs: ClassVar[set[str]] = frozenset([
-        "uploadedFilename",
-        "jobFilename",
-        "updatedAt"
-    ])
-    # assign a class variable to contain parameters that can be updated as jobs
-    # are processed
-    _updatable_attrs: ClassVar[set[str]] = frozenset(["updatedAt"])
 
 class SequenceDatabaseParameters:
     blastEValue: Mapped[int | None] = mapped_column(
-        use_existing_column=True
+        use_existing_column=True,
+        info = {"is_parameter": True, "pipeline_key": "import_blast_evalue"}
     )
     maxBlastSequences: Mapped[int | None] = mapped_column(
-        use_existing_column=True
+        use_existing_column=True,
+        info = {
+            "is_parameter": True,
+            "pipeline_key": "import_blast_num_matches"
+        }
     )
     sequenceDatabase: Mapped[str | None] = mapped_column(
-        use_existing_column=True
+        use_existing_column=True,
+        # NOTE: does this map to a params in the nextflow pipeline(s)
+        info = {"is_updatable": True}
     )
-    # assign a class variable to contain parameters that have relevance to the
-    # nextflow pipeline(s)
-    _parameter_attrs: ClassVar[set[str]] = frozenset([
-        "blastEValue",
-        "maxBlastSequences",
-        "sequenceDatabase"
-    ])
-    # assign a class variable to contain parameters that can be updated as jobs
-    # are processed
-    _updatable_attrs: ClassVar[set[str]] = frozenset([])
 
 class SearchParameters:
     searchType: Mapped[str | None] = mapped_column(
-        use_existing_column=True
+        use_existing_column=True,
+        # NOTE: does this map to a params in the nextflow pipeline(s)
+        info = {"is_parameter": True}
     )
-    # assign a class variable to contain parameters that have relevance to the
-    # nextflow pipeline(s)
-    _parameter_attrs: ClassVar[set[str]] = frozenset(["searchType"])
-    # assign a class variable to contain parameters that can be updated as jobs
-    # are processed
-    _updatable_attrs: ClassVar[set[str]] = frozenset([])
 
 class ESTGenerateJob:
     allByAllBlastEValue: Mapped[int | None] = mapped_column(
-        use_existing_column=True
+        use_existing_column=True,
+        info = {"is_parameter": True, "pipeline_key": "blast_evalue"}
     )
     # results columns, not important parameters for nextflow pipelines
     numFamilyOverlap: Mapped[int | None] = mapped_column(
-        use_existing_column=True
+        use_existing_column=True,
+        info = {"is_updatable": True}
     )
     numNonFamily: Mapped[int | None] = mapped_column(
-        use_existing_column=True
+        use_existing_column=True,
+        info = {"is_updatable": True}
     )
     numUnirefFamilyOverlap: Mapped[int | None] = mapped_column(
-        use_existing_column=True
+        use_existing_column=True,
+        info = {"is_updatable": True}
     )
     numComputedSequences: Mapped[int | None] = mapped_column(
-        use_existing_column=True
+        use_existing_column=True,
+        info = {"is_updatable": True}
     )
     numUniqueSequences: Mapped[int | None] = mapped_column(
-        use_existing_column=True
+        use_existing_column=True,
+        info = {"is_updatable": True}
     )
     numBlastEdges: Mapped[int | None] = mapped_column(
-        use_existing_column=True
+        use_existing_column=True,
+        info = {"is_updatable": True}
     )
-    # assign a class variable to contain parameters that have relevance to the
-    # nextflow pipeline(s)
-    _parameter_attrs: ClassVar[set[str]] = frozenset(["allByAllBlastEValue"])
-    # assign a class variable to contain parameters that can be updated as jobs
-    # are processed
-    _updatable_attrs: ClassVar[set[str]] = frozenset([
-        "numFamilyOverlap",
-        "numNonFamily",
-        "numUnirefFamilyOverlap",
-        "numComputedSequences",
-        "numUniqueSequences",
-        "numBlastEdges",
-    ])
 
 class GNTDiagramJob:
     neighborhoodWindowSize: Mapped[int | None] = mapped_column(
-        use_existing_column=True
+        use_existing_column=True,
+        info = {"is_parameter": True, "pipeline_key": "nb_size"}
     )
-    # assign a class variable to contain parameters that have relevance to the
-    # nextflow pipeline(s)
-    _parameter_attrs: ClassVar[set[str]] = frozenset(["neighborhoodWindowSize"])
-    # assign a class variable to contain parameters that can be updated as jobs
-    # are processed
-    _updatable_attrs: ClassVar[set[str]] = frozenset([])
 
 ###############################################################################
 # polymorphic_identity classes
@@ -345,26 +273,9 @@ class ESTGenerateFastaJob(
         "polymorphic_load": "selectin",
         "polymorphic_identity": "est_generate_fasta"
     }
-    
-    inputFasta: Mapped[str | None]
-    # assign a class variable to contain parameters that have relevance to the
-    # nextflow pipeline(s); gathers all mixin classes' parameters too
-    _parameter_attrs: ClassVar[set[str]] = Job._parameter_attrs.union(
-        ESTGenerateJob._parameter_attrs,
-        FilenameParameters._parameter_attrs,
-        FilterByFamiliesParameters._parameter_attrs,
-        ProteinFamilyAdditionParameters._parameter_attrs,
-        UserUploadedIdsParameters._parameter_attrs,
-        frozenset(["inputFasta"])
-    )
-    # assign a class variable to contain parameters that can be updated as jobs
-    # are processed
-    _updatable_attrs: ClassVar[set[str]] = Job._updatable_attrs.union(
-        ESTGenerateJob._updatable_attrs,
-        FilenameParameters._updatable_attrs,
-        FilterByFamiliesParameters._updatable_attrs,
-        ProteinFamilyAdditionParameters._updatable_attrs,
-        UserUploadedIdsParameters._updatable_attrs,
+    inputFasta: Mapped[str | None] = mapped_column(
+        # NOTE: does this map to a params in the nextflow pipeline(s)
+        info = {"is_parameter": True, }
     )
 
 class ESTGenerateFamiliesJob(
@@ -379,25 +290,6 @@ class ESTGenerateFamiliesJob(
         "polymorphic_load": "selectin",
         "polymorphic_identity": "est_generate_families"
     }
-    
-    # assign a class variable to contain parameters that have relevance to the
-    # nextflow pipeline(s); gathers all mixin classes' parameters too
-    _parameter_attrs: ClassVar[set[str]] = Job._parameter_attrs.union(
-        ESTGenerateJob._parameter_attrs,
-        DomainBoundariesParameters._parameter_attrs,
-        ExcludeFragmentsParameters._parameter_attrs,
-        FilterByTaxonomyParameters._parameter_attrs,
-        ProteinFamilyAdditionParameters._parameter_attrs,
-    )
-    # assign a class variable to contain parameters that can be updated as jobs
-    # are processed
-    _updatable_attrs: ClassVar[set[str]] = Job._updatable_attrs.union(
-        ESTGenerateJob._updatable_attrs,
-        DomainBoundariesParameters._updatable_attrs,
-        ExcludeFragmentsParameters._updatable_attrs,
-        FilterByTaxonomyParameters._updatable_attrs,
-        ProteinFamilyAdditionParameters._updatable_attrs,
-    )
 
 class ESTGenerateBlastJob(
         Job,
@@ -412,27 +304,6 @@ class ESTGenerateBlastJob(
         "polymorphic_load": "selectin",
         "polymorphic_identity": "est_generate_blast"
     }
-
-    # assign a class variable to contain parameters that have relevance to the
-    # nextflow pipeline(s); gathers all mixin classes' parameters too
-    _parameter_attrs: ClassVar[set[str]] = Job._parameter_attrs.union(
-        ESTGenerateJob._parameter_attrs,
-        BlastSequenceParameters._parameter_attrs,
-        ExcludeFragmentsParameters._parameter_attrs,
-        FilterByTaxonomyParameters._parameter_attrs,
-        ProteinFamilyAdditionParameters._parameter_attrs,
-        SequenceDatabaseParameters._parameter_attrs,
-    )
-    # assign a class variable to contain parameters that can be updated as jobs
-    # are processed
-    _updatable_attrs: ClassVar[set[str]] = Job._updatable_attrs.union(
-        ESTGenerateJob._updatable_attrs,
-        BlastSequenceParameters._updatable_attrs,
-        ExcludeFragmentsParameters._updatable_attrs,
-        FilterByTaxonomyParameters._updatable_attrs,
-        ProteinFamilyAdditionParameters._updatable_attrs,
-        SequenceDatabaseParameters._updatable_attrs,
-    )
 
 class ESTGenerateAccessionJob(
         Job,
@@ -449,32 +320,8 @@ class ESTGenerateAccessionJob(
         "polymorphic_load": "selectin",
         "polymorphic_identity": "est_generate_accession"
     }
-
-    domainFamily: Mapped[str | None]
-    # assign a class variable to contain parameters that have relevance to the
-    # nextflow pipeline(s); gathers all mixin classes' parameters too
-    _parameter_attrs: ClassVar[set[str]] = Job._parameter_attrs.union(
-        ESTGenerateJob._parameter_attrs,
-        DomainBoundariesParameters._parameter_attrs,
-        ExcludeFragmentsParameters._parameter_attrs,
-        FilenameParameters._parameter_attrs,
-        FilterByFamiliesParameters._parameter_attrs,
-        FilterByTaxonomyParameters._parameter_attrs,
-        ProteinFamilyAdditionParameters._parameter_attrs,
-        UserUploadedIdsParameters._parameter_attrs,
-        frozenset(["domainFamily"])
-    )
-    # assign a class variable to contain parameters that can be updated as jobs
-    # are processed
-    _updatable_attrs: ClassVar[set[str]] = Job._updatable_attrs.union(
-        ESTGenerateJob._updatable_attrs,
-        DomainBoundariesParameters._updatable_attrs,
-        ExcludeFragmentsParameters._updatable_attrs,
-        FilenameParameters._updatable_attrs,
-        FilterByFamiliesParameters._updatable_attrs,
-        FilterByTaxonomyParameters._updatable_attrs,
-        ProteinFamilyAdditionParameters._updatable_attrs,
-        UserUploadedIdsParameters._updatable_attrs,
+    domainFamily: Mapped[str | None] = mapped_column(
+        info = {"is_parameter": True, "pipeline_key": "domain_family"}
     )
 
 class ESTSSNFinalizationJob(
@@ -488,24 +335,9 @@ class ESTSSNFinalizationJob(
         "polymorphic_load": "selectin",
         "polymorphic_identity": "est_ssn_finalization"
     }
-
-    computeNeighborhoodConnectivity: Mapped[bool | None]
-    # assign a class variable to contain parameters that have relevance to the
-    # nextflow pipeline(s); gathers all mixin classes' parameters too
-    _parameter_attrs: ClassVar[set[str]] = Job._parameter_attrs.union(
-        AlignmentScoreParameters._parameter_attrs,
-        ExcludeFragmentsParameters._parameter_attrs,
-        FilterByTaxonomyParameters._parameter_attrs,
-        SequenceLengthParameters._parameter_attrs,
-        {"computeNeighborhoodConnectivity"}
-    )
-    # assign a class variable to contain parameters that can be updated as jobs
-    # are processed
-    _updatable_attrs: ClassVar[set[str]] = Job._updatable_attrs.union(
-        AlignmentScoreParameters._updatable_attrs,
-        ExcludeFragmentsParameters._updatable_attrs,
-        FilterByTaxonomyParameters._updatable_attrs,
-        SequenceLengthParameters._updatable_attrs,
+    computeNeighborhoodConnectivity: Mapped[bool | None] = mapped_column(
+        # NOTE: does this map to a params in the nextflow pipeline(s)
+        info = {"is_parameter": True}
     )
 
 class ESTNeighborhoodConnectivityJob(Job, FilenameParameters):
@@ -513,17 +345,6 @@ class ESTNeighborhoodConnectivityJob(Job, FilenameParameters):
         "polymorphic_load": "selectin",
         "polymorphic_identity": "est_neighborhood_connectivity"
     }
-
-    # assign a class variable to contain parameters that have relevance to the
-    # nextflow pipeline(s); gathers all mixin classes' parameters too
-    _parameter_attrs: ClassVar[set[str]] = Job._parameter_attrs.union(
-        FilenameParameters._parameter_attrs,
-    )
-    # assign a class variable to contain parameters that can be updated as jobs
-    # are processed
-    _updatable_attrs: ClassVar[set[str]] = Job._updatable_attrs.union(
-        FilenameParameters._updatable_attrs,
-    )
 
 class ESTConvergenceRatioJob(
         Job,
@@ -535,37 +356,20 @@ class ESTConvergenceRatioJob(
         "polymorphic_identity": "est_convergence_ratio"
     }
 
-    # assign a class variable to contain parameters that have relevance to the
-    # nextflow pipeline(s); gathers all mixin classes' parameters too
-    _parameter_attrs: ClassVar[set[str]] = Job._parameter_attrs.union(
-        AlignmentScoreParameters._parameter_attrs,
-        FilenameParameters._parameter_attrs,
-    )
-    # assign a class variable to contain parameters that can be updated as jobs
-    # are processed
-    _updatable_attrs: ClassVar[set[str]] = Job._updatable_attrs.union(
-        AlignmentScoreParameters._updatable_attrs,
-        FilenameParameters._updatable_attrs,
-    )
-
 class ESTClusterAnalysisJob(Job, FilenameParameters):
     __mapper_args__ = {
         "polymorphic_load": "selectin",
         "polymorphic_identity": "est_cluster_analysis"
     }
-
-    minSeqMSA: Mapped[int | None]
-    maxSeqMSA: Mapped[int | None]
-    # assign a class variable to contain parameters that have relevance to the
-    # nextflow pipeline(s); gathers all mixin classes' parameters too
-    _parameter_attrs: ClassVar[set[str]] = Job._parameter_attrs.union(
-        FilenameParameters._parameter_attrs,
-        frozenset(["minSeqMSA","maxSeqMSA"])
+    minSeqMSA: Mapped[int | None] = mapped_column(
+        use_existing_column=True,
+        # NOTE: does this map to a params in the nextflow pipeline(s)
+        info = {"is_parameter": True}
     )
-    # assign a class variable to contain parameters that can be updated as jobs
-    # are processed
-    _updatable_attrs: ClassVar[set[str]] = Job._updatable_attrs.union(
-        FilenameParameters._updatable_attrs,
+    maxSeqMSA: Mapped[int | None] = mapped_column(
+        use_existing_column=True,
+        # NOTE: does this map to a params in the nextflow pipeline(s)
+        info = {"is_parameter": True}
     )
 
 class ESTColorSSNJob(Job, FilenameParameters):
@@ -574,39 +378,18 @@ class ESTColorSSNJob(Job, FilenameParameters):
         "polymorphic_identity": "est_color_ssn"
     }
 
-    # assign a class variable to contain parameters that have relevance to the
-    # nextflow pipeline(s); gathers all mixin classes' parameters too
-    _parameter_attrs: ClassVar[set[str]] = Job._parameter_attrs.union(
-        FilenameParameters._parameter_attrs,
-    )
-    # assign a class variable to contain parameters that can be updated as jobs
-    # are processed
-    _updatable_attrs: ClassVar[set[str]] = Job._updatable_attrs.union(
-        FilenameParameters._updatable_attrs,
-    )
-
 class GNTGNNJob(Job, GNTDiagramJob, FilenameParameters):
     __mapper_args__ = {
         "polymorphic_load": "selectin",
         "polymorphic_identity": "gnt_gnn"
     }
-
-    cooccurrence: Mapped[float | None]
-    neighborhood_size: Mapped[int | None]   # = mapped_column(
-    #    use_existing_column=True
-    #)
-    # assign a class variable to contain parameters that have relevance to the
-    # nextflow pipeline(s); gathers all mixin classes' parameters too
-    _parameter_attrs: ClassVar[set[str]] = Job._parameter_attrs.union(
-        GNTDiagramJob._parameter_attrs,
-        FilenameParameters._parameter_attrs,
-        frozenset(["cooccurrence","neighborhood_size"])
+    cooccurrence: Mapped[float | None] = mapped_column(
+        use_existing_column=True,
+        info = {"is_parameter": True, "pipeline_key": "cooc_threshold"}
     )
-    # assign a class variable to contain parameters that can be updated as jobs
-    # are processed
-    _updatable_attrs: ClassVar[set[str]] = Job._updatable_attrs.union(
-        GNTDiagramJob._updatable_attrs,
-        FilenameParameters._updatable_attrs,
+    neighborhood_size: Mapped[int | None] = mapped_column(
+        use_existing_column=True,
+        info = {"is_parameter": True, "pipeline_key": "nb_size"}
     )
 
 class GNTDiagramBlastJob(
@@ -621,41 +404,11 @@ class GNTDiagramBlastJob(
         "polymorphic_identity": "gnt_diagram_blast"
     }
 
-    # assign a class variable to contain parameters that have relevance to the
-    # nextflow pipeline(s); gathers all mixin classes' parameters too
-    _parameter_attrs: ClassVar[set[str]] = Job._parameter_attrs.union(
-        GNTDiagramJob._parameter_attrs,
-        BlastSequenceParameters._parameter_attrs,
-        ExcludeFragmentsParameters._parameter_attrs,
-        SequenceDatabaseParameters._parameter_attrs,
-    )
-    # assign a class variable to contain parameters that can be updated as jobs
-    # are processed
-    _updatable_attrs: ClassVar[set[str]] = Job._updatable_attrs.union(
-        GNTDiagramJob._updatable_attrs,
-        BlastSequenceParameters._updatable_attrs,
-        ExcludeFragmentsParameters._updatable_attrs,
-        SequenceDatabaseParameters._updatable_attrs,
-    )
-
 class GNTDiagramFastaJob(Job, GNTDiagramJob, FilenameParameters):
     __mapper_args__ = {
         "polymorphic_load": "selectin",
         "polymorphic_identity": "gnt_diagram_fasta"
     }
-
-    # assign a class variable to contain parameters that have relevance to the
-    # nextflow pipeline(s); gathers all mixin classes' parameters too
-    _parameter_attrs: ClassVar[set[str]] = Job._parameter_attrs.union(
-        GNTDiagramJob._parameter_attrs,
-        FilenameParameters._parameter_attrs,
-    )
-    # assign a class variable to contain parameters that can be updated as jobs
-    # are processed
-    _updatable_attrs: ClassVar[set[str]] = Job._updatable_attrs.union(
-        GNTDiagramJob._updatable_attrs,
-        FilenameParameters._updatable_attrs,
-    )
 
 class GNTDiagramSequenceIdJob(
         Job,
@@ -669,39 +422,11 @@ class GNTDiagramSequenceIdJob(
         "polymorphic_identity": "gnt_diagram_sequence_id"
     }
 
-    # assign a class variable to contain parameters that have relevance to the
-    # nextflow pipeline(s); gathers all mixin classes' parameters too
-    _parameter_attrs: ClassVar[set[str]] = Job._parameter_attrs.union(
-        GNTDiagramJob._parameter_attrs,
-        ExcludeFragmentsParameters._parameter_attrs,
-        FilenameParameters._parameter_attrs,
-        SequenceDatabaseParameters._parameter_attrs,
-    )
-    # assign a class variable to contain parameters that can be updated as jobs
-    # are processed
-    _updatable_attrs: ClassVar[set[str]] = Job._updatable_attrs.union(
-        GNTDiagramJob._updatable_attrs,
-        ExcludeFragmentsParameters._updatable_attrs,
-        FilenameParameters._updatable_attrs,
-        SequenceDatabaseParameters._updatable_attrs,
-    )
-
 class GNTViewDiagramJob(Job, FilenameParameters):
     __mapper_args__ = {
         "polymorphic_load": "selectin",
         "polymorphic_identity": "gnt_view_diagram"
     }
-
-    # assign a class variable to contain parameters that have relevance to the
-    # nextflow pipeline(s); gathers all mixin classes' parameters too
-    _parameter_attrs: ClassVar[set[str]] = Job._parameter_attrs.union(
-        FilenameParameters._parameter_attrs,
-    )
-    # assign a class variable to contain parameters that can be updated as jobs
-    # are processed
-    _updatable_attrs: ClassVar[set[str]] = Job._updatable_attrs.union(
-        FilenameParameters._updatable_attrs,
-    )
 
 class CGFPIdentifyJob(
         Job,
@@ -713,23 +438,13 @@ class CGFPIdentifyJob(
         "polymorphic_load": "selectin",
         "polymorphic_identity": "cgfp_identify"
     }
-
-    referenceDatabase: Mapped[str | None]
-    cdhitSequenceIdentity: Mapped[int | None]      # NOTE: should be a double?
-    # assign a class variable to contain parameters that have relevance to the
-    # nextflow pipeline(s); gathers all mixin classes' parameters too
-    _parameter_attrs: ClassVar[set[str]] = Job._parameter_attrs.union(
-        FilenameParameters._parameter_attrs,
-        SearchParameters._parameter_attrs,
-        SequenceLengthParameters._parameter_attrs,
-        frozenset(["referenceDatabase","cdhitSequenceIdentity"])
+    referenceDatabase: Mapped[str | None] = mapped_column(
+        # NOTE: does this map to a params in the nextflow pipeline(s)
+        info = {"is_parameter": True}
     )
-    # assign a class variable to contain parameters that can be updated as jobs
-    # are processed
-    _updatable_attrs: ClassVar[set[str]] = Job._updatable_attrs.union(
-        FilenameParameters._updatable_attrs,
-        SearchParameters._updatable_attrs,
-        SequenceLengthParameters._updatable_attrs,
+    cdhitSequenceIdentity: Mapped[int | None] = mapped_column(
+        # NOTE: does this map to a params in the nextflow pipeline(s)
+        info = {"is_parameter": True}
     )
 
 class CGFPQuantifyJob(Job,SearchParameters):
@@ -737,18 +452,9 @@ class CGFPQuantifyJob(Job,SearchParameters):
         "polymorphic_load": "selectin",
         "polymorphic_identity": "cgfp_quantify"
     }
-
-    metagenomes: Mapped[str | None]
-    # assign a class variable to contain parameters that have relevance to the
-    # nextflow pipeline(s); gathers all mixin classes' parameters too
-    _parameter_attrs: ClassVar[set[str]] = Job._parameter_attrs.union(
-        SearchParameters._parameter_attrs,
-        frozenset(["metagenomes"])
-    )
-    # assign a class variable to contain parameters that can be updated as jobs
-    # are processed
-    _updatable_attrs: ClassVar[set[str]] = Job._updatable_attrs.union(
-        SearchParameters._updatable_attrs,
+    metagenomes: Mapped[str | None] = mapped_column(
+        # NOTE: does this map to a params in the nextflow pipeline(s)
+        info = {"is_parameter": True}
     )
 
 class TaxonomyAccessionJob(
@@ -764,25 +470,6 @@ class TaxonomyAccessionJob(
         "polymorphic_identity": "taxonomy_accession"
     }
 
-    # assign a class variable to contain parameters that have relevance to the
-    # nextflow pipeline(s); gathers all mixin classes' parameters too
-    _parameter_attrs: ClassVar[set[str]] = Job._parameter_attrs.union(
-        ExcludeFragmentsParameters._parameter_attrs,
-        FilterByFamiliesParameters._parameter_attrs,
-        FilterByTaxonomyParameters._parameter_attrs,
-        FilenameParameters._parameter_attrs,
-        SequenceDatabaseParameters._parameter_attrs,
-    )
-    # assign a class variable to contain parameters that can be updated as jobs
-    # are processed
-    _updatable_attrs: ClassVar[set[str]] = Job._updatable_attrs.union(
-        ExcludeFragmentsParameters._updatable_attrs,
-        FilterByFamiliesParameters._updatable_attrs,
-        FilterByTaxonomyParameters._updatable_attrs,
-        FilenameParameters._updatable_attrs,
-        SequenceDatabaseParameters._updatable_attrs,
-    )
-
 class TaxonomyFamiliesJob(
         Job,
         ExcludeFragmentsParameters,
@@ -795,23 +482,6 @@ class TaxonomyFamiliesJob(
         "polymorphic_identity": "taxonomy_families"
     }
 
-    # assign a class variable to contain parameters that have relevance to the
-    # nextflow pipeline(s); gathers all mixin classes' parameters too
-    _parameter_attrs: ClassVar[set[str]] = Job._parameter_attrs.union(
-        ExcludeFragmentsParameters._parameter_attrs,
-        FilterByFamiliesParameters._parameter_attrs,
-        FilterByTaxonomyParameters._parameter_attrs,
-        SequenceLengthParameters._parameter_attrs,
-    )
-    # assign a class variable to contain parameters that can be updated as jobs
-    # are processed
-    _updatable_attrs: ClassVar[set[str]] = Job._updatable_attrs.union(
-        ExcludeFragmentsParameters._updatable_attrs,
-        FilterByFamiliesParameters._updatable_attrs,
-        FilterByTaxonomyParameters._updatable_attrs,
-        SequenceLengthParameters._updatable_attrs,
-    )
-
 class TaxonomyFastaJob(
         Job,
         ExcludeFragmentsParameters,
@@ -823,23 +493,6 @@ class TaxonomyFastaJob(
         "polymorphic_load": "selectin",
         "polymorphic_identity": "taxonomy_fasta"
     }
-
-    # assign a class variable to contain parameters that have relevance to the
-    # nextflow pipeline(s); gathers all mixin classes' parameters too
-    _parameter_attrs: ClassVar[set[str]] = Job._parameter_attrs.union(
-        ExcludeFragmentsParameters._parameter_attrs,
-        FilenameParameters._parameter_attrs,
-        FilterByFamiliesParameters._parameter_attrs,
-        FilterByTaxonomyParameters._parameter_attrs,
-    )
-    # assign a class variable to contain parameters that can be updated as jobs
-    # are processed
-    _updatable_attrs: ClassVar[set[str]] = Job._updatable_attrs.union(
-        ExcludeFragmentsParameters._updatable_attrs,
-        FilenameParameters._updatable_attrs,
-        FilterByFamiliesParameters._updatable_attrs,
-        FilterByTaxonomyParameters._updatable_attrs,
-    )
 
 ################################################################################
 
