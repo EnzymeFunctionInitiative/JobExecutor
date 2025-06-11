@@ -80,10 +80,10 @@ class Job(Base):
         """
         mapper = inspect(self.__class__)
         return {
-            key: value
-            for key, value in mapper.attrs.items()  # need to check that .items() actually returns key and value
-            if isinstance(attr, MappedColumn)
-            and attr.column.info.get("is_parameter")
+            column.info.get("pipeline_key",column.name): 
+                getattr(self, column.name)
+            for column in mapper.columns
+            if column.info.get("is_parameter")
         }
     
     def get_updatable_attrs(self) -> List[str]:
@@ -92,8 +92,8 @@ class Job(Base):
         """
         mapper = inspect(self.__class__)
         return [ 
-            key for key, value in mapper.attrs.items() 
-            if attr.column.info.get("is_updatable")
+            column.name for column in mapper.columns
+            if column.info.get("is_updatable")
         ]
 
 ################################################################################

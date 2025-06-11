@@ -75,15 +75,16 @@ class Job(Base):
 
     def get_parameters_dict(self) -> Dict[str, Any]:
         """
-        Create a dictionary of attributes that should be written to a
-        params.yaml file.
+        Create a dictionary of attribute and associated values that should be 
+        written to a params.yaml file. If the attribute has a "pipeline_key"
+        in its info dict, use that pipeline_key in the returned dictionary.
         """
         mapper = inspect(self.__class__)
         return {
-            key: value
-            for key, value in mapper.attrs.items()  # need to check that .items() actually returns key and value
-            if isinstance(attr, MappedColumn)
-            and attr.column.info.get("is_parameter")
+            column.info.get("pipeline_key",column.name): 
+                getattr(self, column.name)
+            for column in mapper.columns
+            if column.info.get("is_parameter")
         }
 
     def get_updatable_attrs(self) -> List[str]:
@@ -92,7 +93,7 @@ class Job(Base):
         """
         mapper = inspect(self.__class__)
         return [ 
-            key for key, value in mapper.attrs.items() 
-            if attr.column.info.get("is_updatable")
+            column.name for column in mapper.columns
+            if column.info.get("is_updatable")
         ]
 
