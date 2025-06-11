@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Dict, Any, List
 
 import sqlalchemy
-from sqlalchemy import func
+from sqlalchemy import func, inspect
 from sqlalchemy.orm import DeclarativeBase, mapped_column, Mapped
 
 from constants import Status
