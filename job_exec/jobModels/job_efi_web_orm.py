@@ -1,7 +1,7 @@
 
 from datetime import datetime
 from enum import Flag
-from typing import Dict, Any
+from typing import Dict, Any, List
 import sqlalchemy
 from sqlalchemy.orm import DeclarativeBase, mapped_column, Mapped
 
