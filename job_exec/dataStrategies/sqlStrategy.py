@@ -211,8 +211,9 @@ class SQLStrategy(BaseDataStrategy):
             print(f"No updates applied to the Job ({job_obj.__repr__}).")
             return
 
+        updatable_columns = job_obj.get_updatable_attrs()
         for key, value in update_dict.items():
-            if key not in job_obj._updatable_attrs: 
+            if key not in updatable_columns: 
                 continue
             setattr(job_obj, key, value)
         

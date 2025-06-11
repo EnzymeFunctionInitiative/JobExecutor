@@ -84,6 +84,16 @@ class Job(Base):
             if isinstance(attr, MappedColumn)
             and attr.column.info.get("is_parameter")
         }
+    
+    def get_updatable_attrs(self) -> List[str]:
+        """
+        Create a list of attribute names that can have their values updated. 
+        """
+        mapper = inspect(self.__class__)
+        return [ 
+            key for key, value in mapper.attrs.items() 
+            if attr.column.info.get("is_updatable")
+        ]
 
 ################################################################################
 # Mixin Column Classes
