@@ -17,7 +17,7 @@ def test_check_mode(config_obj):
 
 
 # testing with the dummy task types
-import jobModels.job_plain as job_model
+import jobModels.job_dummy as job_model
 
 # prep the Job objects
 temp_jobs = [

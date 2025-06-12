@@ -1,7 +1,7 @@
 
 from constants import Status
 from configClasses.baseConfig import BaseConfig
-from jobModels.job_plain import Job
+from jobModels.job_dummy import Job
 from .baseStrategy import BaseStrategy
 
 class Start(BaseStrategy):

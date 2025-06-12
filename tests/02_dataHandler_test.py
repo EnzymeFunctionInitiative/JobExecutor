@@ -5,7 +5,7 @@ from configClasses.baseConfig import BaseConfig
 from constants import Status
 from dataHandler import DataHandler
 
-import jobModels.job_plain as job_model
+import jobModels.job_dummy as job_model
 import dataStrategies.baseStrategy as data_strategy
 #import jobModels.job_orm as job_model
 #import dataStrategies.sqlStrategy as data_strategy

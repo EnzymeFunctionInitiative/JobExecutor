@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from typing import List, Dict, Any
 
 from constants import Status
-from jobModels.job_plain import Job 
+from jobModels.job_dummy import Job 
 from configClasses.baseConfig import BaseConfig
 
 # defining the interface for DataStrategies
