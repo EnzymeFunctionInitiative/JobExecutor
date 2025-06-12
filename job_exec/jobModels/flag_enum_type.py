@@ -41,5 +41,5 @@ class FlagEnumType(TypeDecorator):
         python type, for example a status column value of "queued" in the DB is
         converted to Status.QUEUED.
         """
-        return self.enum_class.getFlag(value)
+        return self.enum_class.get_flag(value)
 

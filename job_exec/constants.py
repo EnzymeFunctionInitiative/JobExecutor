@@ -20,7 +20,7 @@ class Status(Flag):
         return self.name.lower()
 
     @classmethod
-    def getFlag(cls, status: Union[int, str]):
+    def get_flag(cls, status: Union[int, str]):
         try:
             if type(status) == int:
                 return cls(status)
