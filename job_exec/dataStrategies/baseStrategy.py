@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from typing import List, Dict, Any
 
 from constants import Status
-from jobModels.job_plain import Job 
+from jobModels.job_dummy import Job 
 from configClasses.baseConfig import BaseConfig
 
 # defining the interface for DataStrategies
@@ -53,7 +53,7 @@ class DictOfDictStrategy(BaseDataStrategy):
 
     def load_data(self):
         """ 
-        create a fake dataset; keys in dict act as primary keys (job_id) and
+        create a fake dataset; keys in dict act as primary keys (id) and
         subdicts contain keyword and value pairs equivalent to other column
         values; below example is very bare-bones
         """
@@ -78,8 +78,8 @@ class DictOfDictStrategy(BaseDataStrategy):
         self.data that pass the status comparison. 
         """
         for key, subdict in self.data.items():
-            # add the `"job_id": key` pair to the subdict
-            subdict.update({"job_id": key})
+            # add the `"id": key` pair to the subdict
+            subdict.update({"id": key})
             # create a Job object for each subdict, with attributes pulled from
             # the subdict keys and associated values from the keys' values.
             temp_job = Job(**subdict)
@@ -96,11 +96,11 @@ class DictOfDictStrategy(BaseDataStrategy):
         #job_obj.__dict__.update(update_dict)
         ## and then apply translate the Job object back to a subdict in
         ## self.data
-        #self.data[job_obj.job_id].update(job_obj.__dict__)
+        #self.data[job_obj.id].update(job_obj.__dict__)
         ## or
-        # just apply the updates directly to the self.data[job_obj.job_id] 
+        # just apply the updates directly to the self.data[job_obj.id] 
         # subdict
-        self.data[job_obj.job_id].update(update_dict)
+        self.data[job_obj.id].update(update_dict)
 
         # showing both methods may be important when the Job object is more
         # complex or there are more complex updates needing to be performed.

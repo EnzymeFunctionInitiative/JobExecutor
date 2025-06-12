@@ -16,7 +16,7 @@ job_db = SQLStrategy(config)
 job_db.load_data()
 
 row0 = Job(
-    job_id = 1,
+    id = 1,
     user_id = 1,
     uuid = "aaa",
     status = "finished",
@@ -32,7 +32,7 @@ row0 = Job(
 )
 
 row1 = Job(
-    job_id = 2,
+    id = 2,
     user_id = 1,
     uuid = "bbb",
     status = "running",
@@ -48,7 +48,7 @@ row1 = Job(
 )
 
 row2 = Job(
-    job_id = 3,
+    id = 3,
     user_id = 1,
     uuid = "bbb",
     status = "running",
@@ -64,7 +64,7 @@ row2 = Job(
 )
 
 row3 = Job(
-    job_id = 4,
+    id = 4,
     user_id = 1,
     uuid = "ccc",
     status = "new",
@@ -80,7 +80,7 @@ row3 = Job(
 )
 
 row4 = Job(
-    job_id = 5,
+    id = 5,
     user_id = 1,
     uuid = "ddd",
     status = "new",
@@ -96,7 +96,7 @@ row4 = Job(
 )
 
 row5 = Job(
-    job_id = 6,
+    id = 6,
     user_id = 1,
     uuid = "aaa",
     status = "failed",
@@ -112,7 +112,7 @@ row5 = Job(
 )
 
 row6 = Job(
-    job_id = 7,
+    id = 7,
     user_id = 1,
     uuid = "aaa",
     status = "archived",

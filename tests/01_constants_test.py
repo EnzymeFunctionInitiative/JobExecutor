@@ -23,9 +23,9 @@ test_data = [
     pytest.param("archived", Status.ARCHIVED)
 ] 
 @pytest.mark.parametrize("Status_str, Status_flag", test_data)
-def test_getStatus(Status_str, Status_flag):
-    """ Testing wrapper function for the Status.getStatus method """
-    assert Status.getStatus(Status_str) == Status_flag
+def test_get_flag(Status_str, Status_flag):
+    """ Testing wrapper function for the Status.get_flag method """
+    assert Status.get_flag(Status_str) == Status_flag
 
 test_data = [
     # check membership in Status.INCOMPLETE

@@ -1,6 +1,6 @@
 [project]
 name = "EFIJobExecutor"
-version = "0.0.2"
+version = "0.0.3"
 authors = [
   { name="Russell B. Davidson", email="rbdavid@illinois.edu" },
   { name="Nils Oberg", email="noberg@illinois.edu" },

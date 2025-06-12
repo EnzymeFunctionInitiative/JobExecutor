@@ -26,13 +26,6 @@ class SQLStrategy(BaseDataStrategy):
         self.Session: Optional[sqlalchemy.orm.sessionmaker] = None
         self.session: Optional[sqlalchemy.orm.Session] = None
 
-        self.updatable_attrs = [
-            "status",
-            "timeStarted",
-            "timeCompleted",
-            "results"
-        ]
-
     def create_db_url(self) -> str:
         """ 
         Create the database url used in SQLAlchemy to connect to an engine. 
@@ -218,8 +211,9 @@ class SQLStrategy(BaseDataStrategy):
             print(f"No updates applied to the Job ({job_obj.__repr__}).")
             return
 
+        updatable_columns = job_obj.get_updatable_attrs()
         for key, value in update_dict.items():
-            if key not in self.updatable_attrs: 
+            if key not in updatable_columns: 
                 continue
             setattr(job_obj, key, value)
         

@@ -5,7 +5,7 @@ from configClasses.baseConfig import BaseConfig
 from constants import Status
 from dataHandler import DataHandler
 
-import jobModels.job_plain as job_model
+import jobModels.job_dummy as job_model
 import dataStrategies.baseStrategy as data_strategy
 #import jobModels.job_orm as job_model
 #import dataStrategies.sqlStrategy as data_strategy
@@ -41,7 +41,7 @@ def test_data_handler(
             job, 
             {"status": Status.NEW, "results": "new value"}
         )
-        assert data_handler._strategy.data[job.job_id]["status"] == Status.NEW
+        assert data_handler._strategy.data[job.id]["status"] == Status.NEW
 
 
 import dataStrategies.sqlStrategy as data_strategy
