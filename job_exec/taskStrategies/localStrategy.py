@@ -11,6 +11,7 @@ from constants import Status
 from configClasses.baseConfig import BaseConfig
 from jobModels.job_orm import Job
 from .baseStrategy import BaseStrategy
+from .utilities import run_command
 
 class Start(BaseStrategy):
     ############################################################################
@@ -34,7 +35,7 @@ class Start(BaseStrategy):
         # 7) collect and transport files, as needed. 
         # 8) execute the batch commands. 
         # 9) fill out the updates_dict and return
-        
+       
         # step 1. Determine the type of Job to be performed. 
         # the pipeline class attribute is just one way to denote this 
         # information. I could also use the class name itself to determine the
@@ -88,23 +89,24 @@ class Start(BaseStrategy):
             # predict destination's file paths for these files
             destination = self.to_destination / jobId
             # run the transfer command; in the local sense, this is kinda dumb
-            retcode, comms = run_command(
-                f"unzip {zip_file_path} -d {destination}"
-            )
+            cmd = f"unzip {zip_file_path} -d {destination}"
+            retcode, results = run_command(cmd)
             if retcode != 0:
-                raise TransportError("")
+                raise results[0](f"Transportation failed.\n{job_obj}")
             
         # step 8. Command execution.
         retcode = 0
         for i, cmd in self.command_list:
             print(i, cmd)
             retcode, comms = run_command(cmd)
-            proc_stdout, proc_stderr = [proc_std.decode() for proc_std in comms]
-            print("\n".join([proc_stdout, proc_stderr]))
 
             # if an error occurs
             if proc_stderr or retcode != 0:
-                raise CommandError("")
+                raise results[0](f"Transportation failed.\n{job_obj}")
+            
+            # no error occurred so process the stdout and stderr
+            proc_stdout, proc_stderr = comms
+            print("\n".join([proc_stdout, proc_stderr]))
       
         # step 9. Collect updates.
         updates_dict = {}
