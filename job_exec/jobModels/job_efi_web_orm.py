@@ -45,7 +45,7 @@ class Job(Base):
         info = {"is_updatable": True}
     )
     efi_db_version: Mapped[str | None] = mapped_column(
-        info = {"is_parameter": True, "pipeline_key": "job_id"}
+        info = {"is_parameter": True, "pipeline_key": "efi_db"} # NOTE: incorrect mapping?
     )
     isExample: Mapped[bool | None]
     parentJob_id: Mapped[int | None]
@@ -96,19 +96,37 @@ class Job(Base):
             if column.info.get("is_updatable")
         ]
 
+    def get_input_files(self) -> List[str]:
+        """
+        Create a list of attribute names that map to input files that require
+        specialized handling before a job can be started. 
+        """
+        pass
+
+    def get_output_files(self) -> List[str]:
+        """
+        Create a list of attribute names that map to output files that require
+        specialized handling once a job is finished. 
+        """
+        pass
+
 ################################################################################
 # Mixin Column Classes
 
 class AlignmentScoreParameters:
     alignmentScore: Mapped[int | None] = mapped_column(
         use_existing_column=True,
-        info = {"is_parameter": True, "pipeline_key": "filter"}
+        info = {"is_parameter": True}
     )
 
 class BlastSequenceParameters:
     blastSequence: Mapped[str | None] = mapped_column(
         use_existing_column=True,
-        info = {"is_parameter": True, "pipeline_key": "blast_query_file"}
+        info = {
+            "is_parameter": True, 
+            "pipeline_key": "blast_query_file", 
+            "is_file": True,
+        }
     )
 
 class SequenceLengthParameters:
@@ -155,7 +173,6 @@ class DomainBoundariesParameters:
 class ExcludeFragmentsParameters:
     excludeFragments: Mapped[bool | None] = mapped_column(
         use_existing_column=True,
-        # NOTE: does this map to a params in the nextflow pipeline(s)
         info = {"is_parameter": True}
     )
 
@@ -174,7 +191,7 @@ class FilterByTaxonomyParameters:
 class FilterByFamiliesParameters:
     filterByFamilies: Mapped[str | None] = mapped_column(
         use_existing_column=True,
-        info = {"is_parameter": True, "pipeline_key": "filter"}
+        info = {"is_parameter": True}
     )
 
 class UserUploadedIdsParameters:
@@ -286,7 +303,7 @@ class ESTGenerateFastaJob(
     }
     inputFasta: Mapped[str | None] = mapped_column(
         # NOTE: does this map to a params in the nextflow pipeline(s)
-        info = {"is_parameter": True, }
+        info = {"is_parameter": True, "is_file": True,}
     )
     pipeline = "est:fasta"
 
@@ -337,7 +354,7 @@ class ESTGenerateAccessionJob(
     domainFamily: Mapped[str | None] = mapped_column(
         info = {"is_parameter": True, "pipeline_key": "domain_family"}
     )
-    pipeline = "est:accession"
+    pipeline = "est:accessions"
 
 class ESTSSNFinalizationJob(
         Job,
