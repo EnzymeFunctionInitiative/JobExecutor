@@ -65,16 +65,17 @@ class Start(BaseStrategy):
         # step 5. Parameter rendering.
         params_file_path = Path(self.from_destination) / "params.json"
         self.render_params(params_file_path)
+        self.params_dict["params_file"] = params_file_path
 
         # step 6. Command preparation.
-        batch_file_path = Path(self.from_destination) / "batch.sh"
-        command_template_file = Path(
+        batch_file_path = Path(self.from_destination) / "run_efi_nextflow.sh"
+        batch_file_template = Path(
             config_obj.get_attribute(
                 "compute_dict",
-                "template_dir",
+                "template_dir"
             )
-        ) / f"run_efi_nextflow.jinja"
-        self.render_batch(command_template_file, batch_file_path)
+        ) / "run_efi_nextflow.sh.jinja"
+        self.render_batch(batch_file_template, batch_file_path)
        
         # step 7. Transport files.
         if self.from_destination != self.to_destination:
@@ -96,7 +97,7 @@ class Start(BaseStrategy):
         # step 8. Command execution.
         commands = config_obj.get_attribute(
             "compute_dict",
-            "submit_command",
+            "submit_command"
         )
         retcode = 0
         for i, cmd in commands:
@@ -147,49 +148,49 @@ class Start(BaseStrategy):
         # step 3.
         output_dir = config_obj.get_parameter(
             "compute_dict",
-            "output_dir",
+            "output_dir",   # NOTE: this is a local path or redundant w/ transportation subparameters?
             os.getenv("EFI_OUTPUT_DIR")
         )
         params_dict["output_dict"] = Path(output_dir) / params_dict["job_id"]
 
         params_dict["efi_config"] = config_obj.get_parameter(
-            "compute_dict", 
-            "efi_config", 
+            "compute_dict",
+            "efi_config",
             os.getenv("EFI_JOB_CONFIG")
         )
         params_dict["efi_db"] = config_obj.get_parameter(
-            "compute_dict", 
-            "efi_db", 
+            "compute_dict",
+            "efi_db",
             os.getenv("EFI_DB")
         )
         params_dict["nf_config"] = config_obj.get_parameter(
-            "compute_dict", 
-            "nf_config", 
+            "compute_dict",
+            "nf_config",
             os.getenv("EFI_NF_CONFIG")
         )
         
         # params only relevant to EST but the params.yaml file can be 
         # overfilled with parameters so no harm done to non-EST job types
         params_dict["duckdb_mem_limit"] = config_obj.get_parameter(
-            "compute_dict", 
-            "duckdb_memory_limit", 
+            "compute_dict",
+            "duckdb_memory_limit",
             os.getenv("EFI_DDB_MEM_LIMIT", 0)
         )
         params_dict["duckdb_threads"] = config_obj.get_parameter(
-            "compute_dict", 
-            "duckdb_threads", 
+            "compute_dict",
+            "duckdb_threads",
             os.getenv("EFI_DDB_THREADS", 0 )
         )
         params_dict["fasta_shards"] = config_obj.get_parameter(
-            "compute_dict", 
-            "fasta_shards", 
+            "compute_dict",
+            "fasta_shards",
             os.getenv("EFI_FASTA_SHARDS", 128)
         )
 
         # develop the path to the nf pipeline script 
         params_dict["workflow_path"] = Path(
             config_obj.get_parameter(
-                "compute_dict", 
+                "compute_dict",
                 "est_repo_path",
                 os.getenv("EST_REPO_PATH")
             )
@@ -197,6 +198,16 @@ class Start(BaseStrategy):
         
         # step 4.
         # ... develop pipeline specific handling of parameters
+        # which are: 
+        # EST: 
+        #   - 
+        #
+        # GenerateSSN: 
+        #   - 
+        #
+        # GNT: 
+        #   - 
+        #
 
         #if len(pipeline) == 2:
         #    a specific input path's parameters need to be prepared
