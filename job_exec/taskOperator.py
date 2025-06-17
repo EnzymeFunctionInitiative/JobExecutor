@@ -26,7 +26,7 @@ class Operator:
 
         NOTE: need to update this list as new modes are implemented
         """
-        if self.mode not in ["dummy","mysql","sqlite","sql"]:
+        if self.mode not in ["dummy","local"]:
             raise NotImplementedError("This mode is not implemented. Try" 
                 + " something different, like 'dummy'")
 
@@ -83,9 +83,9 @@ class Operator:
 
         # run the self._strategy.execute() method; all handling of the job obj
         # happens inside of this method
-        retcode, results = self._strategy.execute(job, config_obj)
+        retcode, updates = self._strategy.execute(job, config_obj)
         
-        return retcode, results
+        return retcode, updates
 
 
     def prepare(self, job_status: Status):
