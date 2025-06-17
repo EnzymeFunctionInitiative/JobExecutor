@@ -1,17 +1,16 @@
 
+from typing import Dict, Any, Tuple, List
 import os
 from datetime import datetime
-from typing import Dict, Any, Tuple, List
 from pathlib import Path
 import json
 from jinja2 import Environment, FileSystemLoader, select_autoescape
-import zipfile
 
 from constants import Status
 from configClasses.baseConfig import BaseConfig
 from jobModels.job_orm import Job
 from .baseStrategy import BaseStrategy
-from .utilities import run_command
+from .utilities import run_command, zip_files, slurm_job_states as job_states
 
 class Start(BaseStrategy):
     ############################################################################
@@ -22,14 +21,13 @@ class Start(BaseStrategy):
         ## OUTLINE:
         # the job_obj, config_obj, and possibly environment variables contain 
         # all necessary information for running this task. 
-        # 1) determine the nf pipeline; general nextflow pipeline as well as 
-        #    specific avenue/mode to perform the calculation. Also get the 
-        #    transportation strategy for a NEW job. 
-        # 2) gather the parameters from the job object in the form of 
-        #    dictionary
+        # 1) determine the nf (sub)pipeline; gather working directories from a
+        #    web-server and compute-cluster stand point. 
+        # 2) gather the parameters from the job object in the form of a
+        #    dictionary.
         # 3) using the config_obj, develop config-specific parameters. 
         # 4) run pipeline specific input parameter code development (port 
-        #    equivalent code from the EST/bin/*py scripts
+        #    equivalent code from the EST/bin/*py scripts)
         # 5) Write parameters to a file. 
         # 6) prepare batch commands/files. 
         # 7) collect and transport files, as needed. 
@@ -37,87 +35,90 @@ class Start(BaseStrategy):
         # 9) fill out the updates_dict and return
        
         # step 1. Determine the type of Job to be performed. 
-        # the pipeline class attribute is just one way to denote this 
-        # information. I could also use the class name itself to determine the
-        # necessary information... 
         pipeline = job_obj.pipeline.split(":")
-        ## or 
-        #cls_name = job_obj.__class__.__name__
-        ## apply some sort of splits to the class names to generate the same 
-        ## info as what's in the pipeline class attribute. 
         
+        # determine the transportation strategy to get working dirs.
         transport_strategy = config_obj.get_attribute(
             "transport_dict",
             "transport_strategy"
         )
         if transport_strategy:
+            from_destination = ""
+            to_destination   = ""
             for strat in transport_strategy:
                 if job_obj.status.__str__() == strat.status:
-                    self.from_destination = Path(strat.destination1)
-                    self.to_destination   = Path(strat.destination2)
-                    self.transport_cmd    = strat.command
+                    self.from_destination = Path(strat.destination1) / job_obj.id
+                    self.to_destination   = Path(strat.destination2) / job_obj.id
+                    #transport_cmd    = strat.command   # NOTE: not needed
+                    break
         else:
             self.from_destination = Path("/tmp")
             self.to_destination = Path("/tmp")
         
+        # make the working directories.
+        self.from_destination.mkdir(parents=True, exist_ok=True)
+        self.to_destination.mkdir(parents=True, exist_ok=True)
+
         # steps 2-4. Parameter handling.
         self.params_dict = self.prepare_params(job_obj, config_obj, pipeline)
 
-        # step 5. Parameter Rendering
-        params_file_path = self.render_params()
+        # step 5. Parameter rendering.
+        params_file_path = Path(self.from_destination) / "params.json"
+        self.render_params(params_file_path)
 
         # step 6. Command preparation.
+        batch_file_path = Path(self.from_destination) / "batch.sh"
         command_template_file = Path(
             config_obj.get_attribute(
                 "compute_dict",
                 "template_dir",
             )
-        ) / f"run_nextflow_{pipeline[0]}.jinja"
-        self.command_list = self.render_commands(command_template_file)
+        ) / f"run_efi_nextflow.jinja"
+        self.render_batch(command_template_file, batch_file_path)
        
         # step 7. Transport files.
         if self.from_destination != self.to_destination:
             # get list of input files that need to be transferred
-            input_files = job_obj.get_input_files(self.from_destination)
-            input_files.append(params_file_path)
+            file_list = job_obj.get_input_files(self.from_destination)
+            file_list.append(params_file_path)
+            file_list.append(batch_file_path)
+            
             # zip up files
             zip_file_path = self.from_destination / "input_files.zip"
-            with zipfile.ZipFile(zip_file_path, "w") as zip_file:
-                for file_path in file_paths:
-                    zip_file.write(file_path, arcname = file_path.name)
+            zip_files(zip_file_path, file_list)
 
-            # predict destination's file paths for these files
-            destination = self.to_destination / jobId
             # run the transfer command; in the local sense, this is kinda dumb
-            cmd = f"unzip {zip_file_path} -d {destination}"
+            cmd = f"unzip {zip_file_path} -d {self.to_destination}"
             retcode, results = run_command(cmd)
             if retcode != 0:
                 raise results[0](f"Transportation failed.\n{job_obj}")
             
         # step 8. Command execution.
+        commands = config_obj.get_attribute(
+            "compute_dict",
+            "submit_command",
+        )
         retcode = 0
-        for i, cmd in self.command_list:
+        for i, cmd in commands:
             print(i, cmd)
-            retcode, comms = run_command(cmd)
 
-            # if an error occurs
-            if proc_stderr or retcode != 0:
-                raise results[0](f"Transportation failed.\n{job_obj}")
+            retcode, results = run_command(cmd)
+            if retcode != 0:
+                raise results[0](f"Command {cmd} failed.\n{job_obj}")
             
             # no error occurred so process the stdout and stderr
-            proc_stdout, proc_stderr = comms
+            proc_stdout, proc_stderr = results
             print("\n".join([proc_stdout, proc_stderr]))
+        
+            # get scheduler's job id from lines that have sbatch
+            if "sbatch" in cmd:
+                schedulerJobId = proc_stdout.strip().split()[-1]    # NOTE
       
         # step 9. Collect updates.
         updates_dict = {}
         if retcode == 0:
             updates_dict["status"] = Status.RUNNING
             updates_dict["timeStarted"] = datetime.now()
-            # process the last command's stdout string to get the 
-            # schedulerJobId. NOTE: this is placeholder code assuming the last 
-            # command was sbatch which has stdout in the form of: 
-            # "Submitted batch job 19162807"
-            schedulerJobId = proc_stdout.decode().split()[-1]
 
         else:
             updates_dict["status"] = Status.FAILED
@@ -185,9 +186,6 @@ class Start(BaseStrategy):
             os.getenv("EFI_FASTA_SHARDS", 128)
         )
 
-        # step 4.
-        # ... develop pipeline specific handling of parameters
-
         # develop the path to the nf pipeline script 
         params_dict["workflow_path"] = Path(
             config_obj.get_parameter(
@@ -197,22 +195,24 @@ class Start(BaseStrategy):
             )
         ) / "pipelines" / pipeline[0] / f"{pipeline[0]}.nf"
         
+        # step 4.
+        # ... develop pipeline specific handling of parameters
+
         #if len(pipeline) == 2:
         #    a specific input path's parameters need to be prepared
         #    ...
 
         return params_dict
 
-    def render_params(self) -> Path:
+    def render_params(self, params_file_path: str | Path):
         """
+        Write a `params.json` file filled with the necessary parameters to run
+        the nextflow pipeline, whichever that is.
         """
-        params_file_path = Path(self.from_destination) / self.params_dict["job_id"] / "params.json"
-        params_file_path.parent.mkdir(parents=True, exist_ok=True)
         with open(params_file_path,'w') as out:
             json.dump(self.params_dict, out, indent=4)
-        return params_file_path
 
-    def render_commands(template_file_path: Path) -> List[str]:
+    def render_batch(template_file_path: Path, batch_file_path: Path):
         """
         """
         env = Environment(
@@ -221,18 +221,112 @@ class Start(BaseStrategy):
         )
         command_template = env.get_template(template_file_path)
         command_str = command_template.render(**self.params_dict)
-        return command_str.strip().split("\n")
+        with open(batch_file_path, "w") as batch:
+            batch.write(command_str)
 
 
 class CheckStatus(BaseStrategy):
     def execute(self, job_obj: Job, config_obj: BaseConfig):
         """
         """
-        updates_dict = {}
-        return 0, updates_dict
+        ## OUTLINE:
+        # the job_obj, config_obj, and possibly environment variables contain
+        # all necessary information for running this task.
+        # 1) get the schedulerJobId parameter from the job object.
+        # 2) prepare the commands to check the job's status.
+        # 3) run the commands and parse the stdout to get the job state/status.
+        # 4) If the job is finished, run the transport strategy.
+        # No matter the status, fill out the updates_dict and return.
 
+        # step 1. get schedulerJobId
+        _id = job_obj.schedulerJobId
+        if not _id:
+            return 1, {"status": Status.FAILED}
 
+        # step 2. Command preparation. The "check_status_cmd" parameter in the
+        # config_obj's compute_dict attribute is an f-string with the "{jobid}"
+        # placeholder.
+        cmd = config_obj.get_attribute(
+            "compute_dict",
+            "check_status_cmd"
+        ).format(jobid = _id)
+        
+        # step 3. Run the check_status_cmd
+        retcode, results = run_command(cmd)
+        # if check_status_cmd failed, 
+        if retcode != 0:
+            raise results[0](f"CheckStatus task failed.\n{job_obj}")
+        # otherwise, gather the std out and err strings
+        proc_stdout, proc_stderr = results
+        # assuming the below command is followed, the state/status is the zeroth
+        # element in the split:
+        # sacct -j {_id} -X --format=State,JobID,ExitCode,WorkDir%50 --noheader 
+        # FAILED    19185085    127:0   /home/n-z/rbdavid/Projects/testing
+        # ^this could all be simplified down
+        job_status = proc_stdout.split()[0]
+        
+        # Step 4. Handle the different job states. 
+        if job_status in job_states["running"]:
+            return retcode, {"status": Status.RUNNING}
+        elif job_status in job_states["failed"]:
+            return retcode, {"status": Status.FAILED}
+        # Step 4 cont'd. Finished job may or may not require a transport event.
+        elif job_status in job_states["finished"]:
+            update_dict = {"status": Status.FINISHED}
+            # get Job's class attribute containing file names to be gathered 
+            # as results.
+            file_list = job_obj.get_result_files()
+            
+            # get the transportation strategy for gathering final results.
+            transport_strategy = config_obj.get_attribute(
+                "transport_dict",
+                "transport_strategy"
+            )
+            if transport_strategy:
+                # NOTE: this is gonna change if the `sacct -j` call changes
+                from_destination = Path(proc_stdout.strip().split()[-1])
+                to_destination   = ""
+                for strat in transport_strategy:
+                    if "finished" == strat.status:
+                        from_destination = Path(strat.destination1) / job_obj.id
+                        to_destination   = Path(strat.destination2) / job_obj.id
+                        #transport_cmd    = strat.command   # NOTE: not needed
+                        break
+            else:
+                # NOTE: this is gonna change if the `sacct -j` call changes
+                cwd = Path(proc_stdout.strip().split()[-1])
+                # NOTE: this is gonna change once the columns for results is 
+                # figured out
+                # NOTE: NO CHECKS DONE FOR FILE EXISTING
+                update_dict["results"] = [cwd / file for file in file_list]
+                return 0, update_dict
+            
+            # complete the from_destination paths to include the file names
+            from_list = [from_destination / file for file in file_list]
+            
+            # if no to_destination has been defined then no transportation 
+            # is needed;
+            # NOTE: this is needed because there are no constraints on what 
+            # parameters are listed in the config_obj's file
+            # NOTE: NO CHECKS DONE FOR FILE EXISTING
+            if not to_destination:
+                update_dict["results"] = from_list
+                return 0, update_dict
 
+            # zip those files up
+            zip_file_path = from_destination / "result_files.zip"
+            zip_files(zip_file_path, from_list)
 
+            # transfer the zip
+            to_destination.mkdir(parents=True, exist_ok=True)
+            cmd = f"unzip {zip_file_path} -d {to_destination}"
+            retcode, results = run_command(cmd)
+            if retcode != 0:
+                raise results[0](f"Transportation failed.\n{job_obj}")
+
+            # fill the update_dict with table values to be updated
+            update_dict["results"] = [to_destination / file for file in file_list]
+
+            return 0, updates_dict
 
 

@@ -1,7 +1,32 @@
 
+import zipfile
 import subprocess
+from pathlib import Path
 from typing import List
-from .baseStrategy import BaseStrategy
+
+def zip_files(zip_file_path: Path, file_list: List) -> Path:
+    """
+    Zip up the files in the list. 
+
+    Arguments
+    ---------
+        zip_file_path
+            Path, path where the zip file will be written.
+        file_list
+            List[str | Path], contains paths to files to be zipped up.
+    """
+    try:
+        zip_file_path.parent.mkdir(parents=True, exist_ok=True)
+        with zipfile.ZipFile(zip_file_path, "w") as zip_file:
+            for file_path in file_list:
+                zip_file.write(file_path, arcname = file_path.name)
+    except zipfile.BadZipFile as e:
+        print(f"Zipping files {file_list} failed.\n{e}")
+        raise
+    except OSError as e:
+        print(f"Zipping files {file_list} failed.\n{e}")
+        raise
+
 
 def run_command(cmd: str):
     """
@@ -57,4 +82,10 @@ def run_command(cmd: str):
 
     except Exception as e:
         return 1, (e)
+
+slurm_job_states = {
+    "running" : ["PENDING", "REQUEUED", "RUNNING"],
+    "failed"  : ["BOOT_FAIL","CANCELLED","DEADLINE","FAILED","NODE_FAIL","OUT_OF_MEMORY","PREEMPTED","SUSPENDED","TIMEOUT"],
+    "finished": ["COMPLETED"]
+}
 
