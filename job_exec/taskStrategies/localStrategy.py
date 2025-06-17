@@ -42,6 +42,7 @@ class Start(BaseStrategy):
             "transport_dict",
             "transport_strategy"
         )
+        # NOTE: better handling of presence or absence of these config settings
         if transport_strategy:
             from_destination = ""
             to_destination   = ""
@@ -138,69 +139,137 @@ class Start(BaseStrategy):
             pipeline_list: List[str]
         ) -> Dict[str, Any]:
         """
+        Gather all relevant parameters for the nextflow pipeline into a dict.
+
+        Arguments
+        ---------
+            job_obj
+                Job object, a subclass of the Job table with specified
+                parameters accessible via the `get_parameters_dict()` method.
+            config_obj
+                BaseConfig object, a container for the input parameters given
+                via the Config INI or JSON file. This contains all
+                site-specific details such as paths, environment files, etc.
+            pipeline_list
+                list, can be len of 1 or 2. Zeroth element describes which
+                nextflow pipeline to use. If present, the first element
+                specifies the input/import mode for the given pipeline. E.g.
+                an ESTGenerateFastaJob has a pipeline_list of ["est","fasta"].
+
+        Returns
+        -------
+            a parameter dictionary filled with key:value pairs relevant to the
+            given job_obj. May include extra parameters that go unused in the
+            nextflow run; no harm is done by doing this.
         """
-        # use the parameters, config_obj, and environment variables to fill in 
-        # any missing parameters
-        
         # step 2.
         params_dict = job_obj.get_parameters_dict()
     
         # step 3.
         output_dir = config_obj.get_parameter(
             "compute_dict",
-            "output_dir",   # NOTE: this is a local path or redundant w/ transportation subparameters?
+            "final_output_dir",
             os.getenv("EFI_OUTPUT_DIR")
-        )
+        ) # NOTE: this is a local path or redundant w/ transportation subparameters?
         params_dict["output_dict"] = Path(output_dir) / params_dict["job_id"]
 
         params_dict["efi_config"] = config_obj.get_parameter(
             "compute_dict",
             "efi_config",
             os.getenv("EFI_JOB_CONFIG")
-        )
+        ) # NOTE: this value is pointing to a file on the compute resource; is this needed if efi_db is an sqlite file?
+
         params_dict["efi_db"] = config_obj.get_parameter(
             "compute_dict",
             "efi_db",
             os.getenv("EFI_DB")
-        )
+        ) # NOTE: this value is pointing to a file if efi_db is sqlite or a db name if mysql.
+        
         params_dict["nf_config"] = config_obj.get_parameter(
             "compute_dict",
             "nf_config",
             os.getenv("EFI_NF_CONFIG")
-        )
+        ) # NOTE: this value is pointing to a file on the compute resource
         
-        # params only relevant to EST but the params.yaml file can be 
+        # params only relevant to EST but the params.yaml file can be
         # overfilled with parameters so no harm done to non-EST job types
         params_dict["duckdb_mem_limit"] = config_obj.get_parameter(
             "compute_dict",
             "duckdb_memory_limit",
             os.getenv("EFI_DDB_MEM_LIMIT", 0)
         )
-        params_dict["duckdb_threads"] = config_obj.get_parameter(
-            "compute_dict",
-            "duckdb_threads",
-            os.getenv("EFI_DDB_THREADS", 0 )
-        )
-        params_dict["fasta_shards"] = config_obj.get_parameter(
+        # NOTE: this parameter is not currently used by any workflow
+        #params_dict["duckdb_threads"] = config_obj.get_parameter(
+        #    "compute_dict",
+        #    "duckdb_threads",
+        #    os.getenv("EFI_DDB_THREADS", 1)
+        #)
+        params_dict["num_fasta_shards"] = config_obj.get_parameter(
             "compute_dict",
             "fasta_shards",
             os.getenv("EFI_FASTA_SHARDS", 128)
         )
+        params_dict["num_accession_shards"] = config_obj.get_parameter(
+            "compute_dict",
+            "accession_shards",
+            os.getenv("EFI_ACCESSION_SHARDS", 16)
+        )
 
-        # develop the path to the nf pipeline script 
+        # develop the path to the nf pipeline script
         params_dict["workflow_path"] = Path(
             config_obj.get_parameter(
                 "compute_dict",
                 "est_repo_path",
                 os.getenv("EST_REPO_PATH")
-            )
+            ) # NOTE: this value is pointing to a file on the compute resource
         ) / "pipelines" / pipeline[0] / f"{pipeline[0]}.nf"
-        
-        # step 4.
-        # ... develop pipeline specific handling of parameters
-        # which are: 
+
+        # step 4. Develop pipeline specific handling of parameters.
+        if pipeline[0].lower() == "est":
+            params_dict["import_mode"] = pipeline[1].lower()
+
+            # look at EST/lib/EFI/Import/Config/Filter.pm for the formatting of
+            # members of the params' filter keyword...
+            # e.g. in params.json:
+            # "filter": [
+            #   "family=PF07476",           # comma separated list of accession Ids (no spaces)
+            #   "fragment",                 # just a flag
+            #   "fraction=1",               # integer value directly after equals sign
+            ### NOTE: below not implemented
+            #   "predef-file=/some/path/to/a/taxonomy_filter_file.yml",
+            #   "predef-filter=bacteria",
+            #   "user-file=/some/path/to/a/taxonomy_filter_file.yml",
+            #   "user-filter=bacteria",
+
+            # check for filter keywords and gather them into a single filter
+            # list/array in params_dict
+            filter_keys = [
+                ["filterByFamilies", "families"],
+                ["excludeFragments","fragments"],
+                ["fraction", "fraction"],
+                # how do I turn these into user-defined or pre-defined filter entries?
+                #["taxSearch", ...],
+                #["taxSearchName", ...],
+            ]
+            params_dict["filter"] = []
+            # loop over filter types' Job table keys
+            for key, keyword in filter_keys:
+                # get the assigned value for the key if present in the
+                # params_dict
+                val = params_dict.get(key)
+                if val:
+                    # add the correctly formatted string to the "filter" list
+                    params_dict["filter"].append(f'"{keyword}={val}"')
+                    # remove the original key from the params_dict so it isn't
+                    # written to the params.json file
+                    params_dict.pop(key)
+
+        # More parameters to be handled: 
         # EST: 
-        #   - 
+        #   - DONE params.import_mode
+        #   - DONE params.filter (temp)
+        #   - params.
+        #   - params.blast_num_matches (dev site only; not mapped to a value in the Job table)
         #
         # GenerateSSN: 
         #   - 
@@ -208,10 +277,6 @@ class Start(BaseStrategy):
         # GNT: 
         #   - 
         #
-
-        #if len(pipeline) == 2:
-        #    a specific input path's parameters need to be prepared
-        #    ...
 
         return params_dict
 
