@@ -13,31 +13,31 @@ class BaseConfig:
           attribute.
         - the compute resource running the EFI tools. Parameters stored in the
           `compute_dict` attribute.
-        - the means of transporting data between the two resources. Parameters 
+        - the means of transporting data between the two resources. Parameters
           stored in the 'transport_dict' attribute.
 
     Parameters
     ----------
         parameter_dict
             dict, expected to be a multi-layered dict of dicts. parameter names
-            mapping to their subdict or values. 
+            mapping to their subdict or values.
 
     Attributes
     ----------
         jobdb_dict
-            dict, generally expecting str keys mapping to str values; relevant 
-            parameters for accessing the database containing information about 
+            dict, generally expecting str keys mapping to str values; relevant
+            parameters for accessing the database containing information about
             each task/job.
         compute_dict
-            dict, generally expecting str keys mapping to str values; relevant 
+            dict, generally expecting str keys mapping to str values; relevant
             parameters for the compute resource being used.
         transport_dict
             dict, generally expecting str keys mapping to str values; relevant
-            parameters for moving data/files between the jobdb and compute 
-            file systems. 
+            parameters for moving data/files between the jobdb and compute
+            file systems.
 
-        These three attributes will be empty dictionaries if left undefined in 
-        the input parameter_dict. 
+        These three attributes will be empty dictionaries if left undefined in
+        the input parameter_dict.
     """
     
     def __init__(self, parameter_dict: Dict[str, Any]) -> None:
@@ -45,6 +45,7 @@ class BaseConfig:
         self.jobdb_dict = parameter_dict.get("jobdb", {})
         self.compute_dict = parameter_dict.get("compute",{})
         self.transport_dict = parameter_dict.get("transportation",{})
+
         # do not collect any other fields to avoid incorporating unnecessary
         # or injected config sections
 
@@ -52,20 +53,57 @@ class BaseConfig:
     # factory methods
     @classmethod
     def read_ini_config(cls, config_path: str):
-        """ 
-        Method to read a configuration file. Assumes that all necessary 
+        """
+        Method to read a configuration file. Assumes that all necessary
         information about both the jobdb and compute configurations are stored
         in this one file.
         """
+        # parse the config as normal
         config = configparser.ConfigParser()
         config.read(config_path)
         config = {s: dict(config.items(s)) for s in config.sections()}
+        
+        # check to see if the transport_strategy key is already present, if
+        # it isn't, assign it to be a dict.
+        config["transport_strategy"] = config.get(
+            "transport_strategy",
+            {}
+        )
+
+        # INI files can't handle arrays, so strategies are contained as single
+        # line key entries. Get that one liner and check to make sure its not
+        # already included as a key in the transport_strategy subdictionary
+        str_val = config.get("new_transport_strategy")
+        if str_val and not config["transport_strategy"].get("new"):
+            # split the single-lined, comma-separated entry into a list; remove
+            # white space from both ends of the strings
+            list_val = [elem.strip() for elem in str_val.split(",")]
+            # add a subdict containing the contents
+            config["transport_strategy"]["new"] = {
+                "destination1": list_val[0],
+                "destination2": list_val[1]
+            }
+        
+        # INI files can't handle arrays, so strategies are contained as single
+        # line key entries. Get that one liner and check to make sure its not
+        # already included as a key in the transport_strategy subdictionary
+        str_val = config.get("finished_transport_strategy")
+        if str_val and not config["transport_strategy"].get("finished"):
+            # split the single-lined, comma-separated entry into a list; remove
+            # white space from both ends of the strings
+            list_val = [elem.strip() for elem in str_val.split(",")]
+            # add a subdict containing the contents
+            config["transport_strategy"]["finished"] = {
+                "destination1": list_val[0],
+                "destination2": list_val[1]
+            }
+        
         return cls(config)
 
     @classmethod
     def read_json_config(cls, config_path: str):
-        """ 
-        Method to read a configuration file. Assumes that all necessary 
+        """
+        Method to read a configuration file. Assumes that all necessary
         information about both the jobdb and compute configurations are stored
         in this one file.
         """
@@ -75,10 +113,10 @@ class BaseConfig:
     #################
     
     #################
-    ## Writer methods 
+    ## Writer methods
     #def write_ini_config(self, config_path: str) -> str:
     #    """
-    #    Method to write an INI formatted configuration file. Only write out 
+    #    Method to write an INI formatted configuration file. Only write out
     #    the relevant configuration dictionaries to this new file.
     #    """
     #    config = configparser.ConfigParser()
@@ -92,17 +130,17 @@ class BaseConfig:
 
     #def write_json_config(self, config_path: str):
     #    """
-    #    Method to write an json formatted configuration file. Only write out 
+    #    Method to write an json formatted configuration file. Only write out
     #    the relevant configuration dictionaries to this new file.
     #    """
     #    with open(config_path, 'w') as f:
     #        json.dump(
     #            {
-    #                "jobdb": self.jobdb_dict, 
+    #                "jobdb": self.jobdb_dict,
     #                "compute": self.compute_dict,
     #                "transportation": self.transport_dict
-    #            }, 
-    #            f, 
+    #            },
+    #            f,
     #            indent = 4
     #        )
     #################
@@ -128,6 +166,6 @@ class BaseConfig:
     #    if not attr_dict:
     #        self.set_attribute(attr, attr_dict)
 
-    # what other methods are needed for the config interface? 
+    # what other methods are needed for the config interface?
 
 
