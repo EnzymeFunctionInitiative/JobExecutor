@@ -37,24 +37,31 @@ class Start(BaseStrategy):
         # step 1. Determine the type of Job to be performed. 
         pipeline = job_obj.pipeline.split(":")
         
+        ## determine the transportation command to be used.
+        #Transport_cmd = config_obj.get_parameter(
+        #    "transport_dict",
+        #    "transport_cmd",
+        #    "cp"
+        #)
         # determine the transportation strategy to get working dirs.
-        transport_strategy = config_obj.get_attribute(
+        transport_strategy = config_obj.get_parameter(
             "transport_dict",
             "transport_strategy"
         )
         # NOTE: better handling of presence or absence of these config settings
         if transport_strategy:
-            from_destination = ""
-            to_destination   = ""
-            for strat in transport_strategy:
-                if job_obj.status.__str__() == strat.status:
-                    self.from_destination = Path(strat.destination1) / job_obj.id
-                    self.to_destination   = Path(strat.destination2) / job_obj.id
-                    #transport_cmd    = strat.command   # NOTE: not needed
-                    break
+            strat = transport_strategy.get("new")
+            if strat:
+                self.from_destination= Path(strat["destination1"]) / job_obj.id
+                self.to_destination  = Path(strat["destination2"]) / job_obj.id
         else:
-            self.from_destination = Path("/tmp")
-            self.to_destination = Path("/tmp")
+            output_dir = config_obj.get_parameter(
+                "compute_dict",
+                "output_dir",
+                "/tmp"
+            )
+            self.from_destination = Path(output_dir) / job_obj.id
+            self.to_destination = Path(output_dir) / job_obj.id
         
         # make the working directories.
         self.from_destination.mkdir(parents=True, exist_ok=True)
@@ -71,7 +78,7 @@ class Start(BaseStrategy):
         # step 6. Command preparation.
         batch_file_path = Path(self.from_destination) / "run_efi_nextflow.sh"
         batch_file_template = Path(
-            config_obj.get_attribute(
+            config_obj.get_parameter(
                 "compute_dict",
                 "template_dir"
             )
@@ -96,7 +103,7 @@ class Start(BaseStrategy):
                 raise results[0](f"Transportation failed.\n{job_obj}")
             
         # step 8. Command execution.
-        commands = config_obj.get_attribute(
+        commands = config_obj.get_parameter(
             "compute_dict",
             "submit_command"
         )
@@ -353,42 +360,36 @@ class CheckStatus(BaseStrategy):
             # as results.
             file_list = job_obj.get_result_files()
             
+            ## determine the transportation command to be used.
+            #transport_cmd = config_obj.get_parameter(
+            #    "transport_dict",
+            #    "transport_cmd",
+            #    "cp"
+            #)
             # get the transportation strategy for gathering final results.
-            transport_strategy = config_obj.get_attribute(
+            transport_strategy = config_obj.get_parameter(
                 "transport_dict",
                 "transport_strategy"
             )
+            # NOTE: better handling of presence or absence of these config 
+            # settings
             if transport_strategy:
-                # NOTE: this is gonna change if the `sacct -j` call changes
-                from_destination = Path(proc_stdout.strip().split()[-1])
-                to_destination   = ""
-                for strat in transport_strategy:
-                    if "finished" == strat.status:
-                        from_destination = Path(strat.destination1) / job_obj.id
-                        to_destination   = Path(strat.destination2) / job_obj.id
-                        #transport_cmd    = strat.command   # NOTE: not needed
-                        break
+                strat = transport_strategy.get("finished")
+                if strat:
+                    from_destination = Path(strat["destination1"]) / job_obj.id
+                    to_destination   = Path(strat["destination2"]) / job_obj.id
             else:
                 # NOTE: this is gonna change if the `sacct -j` call changes
                 cwd = Path(proc_stdout.strip().split()[-1])
                 # NOTE: this is gonna change once the columns for results is 
                 # figured out
-                # NOTE: NO CHECKS DONE FOR FILE EXISTING
+                # NOTE: NO CHECKS DONE FOR FILES EXISTING
                 update_dict["results"] = [cwd / file for file in file_list]
                 return 0, update_dict
             
             # complete the from_destination paths to include the file names
             from_list = [from_destination / file for file in file_list]
             
-            # if no to_destination has been defined then no transportation 
-            # is needed;
-            # NOTE: this is needed because there are no constraints on what 
-            # parameters are listed in the config_obj's file
-            # NOTE: NO CHECKS DONE FOR FILE EXISTING
-            if not to_destination:
-                update_dict["results"] = from_list
-                return 0, update_dict
-
             # zip those files up
             zip_file_path = from_destination / "result_files.zip"
             zip_files(zip_file_path, from_list)

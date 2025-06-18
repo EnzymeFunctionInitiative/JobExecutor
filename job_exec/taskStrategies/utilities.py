@@ -4,6 +4,12 @@ import subprocess
 from pathlib import Path
 from typing import List
 
+slurm_job_states = {
+    "running" : ["PENDING", "REQUEUED", "RUNNING"],
+    "failed"  : ["BOOT_FAIL","CANCELLED","DEADLINE","FAILED","NODE_FAIL","OUT_OF_MEMORY","PREEMPTED","SUSPENDED","TIMEOUT"],
+    "finished": ["COMPLETED"]
+}
+
 def zip_files(zip_file_path: Path, file_list: List) -> Path:
     """
     Zip up the files in the list. 
@@ -82,10 +88,4 @@ def run_command(cmd: str):
 
     except Exception as e:
         return 1, (e)
-
-slurm_job_states = {
-    "running" : ["PENDING", "REQUEUED", "RUNNING"],
-    "failed"  : ["BOOT_FAIL","CANCELLED","DEADLINE","FAILED","NODE_FAIL","OUT_OF_MEMORY","PREEMPTED","SUSPENDED","TIMEOUT"],
-    "finished": ["COMPLETED"]
-}
 
