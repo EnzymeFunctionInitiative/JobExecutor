@@ -8,7 +8,7 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from constants import Status
 from configClasses.baseConfig import BaseConfig
-from jobModels.job_orm import Job
+from jobModels.job_dummy_orm import Job
 from .baseStrategy import BaseStrategy
 from .utilities import run_command, zip_files, slurm_job_states as job_states
 
