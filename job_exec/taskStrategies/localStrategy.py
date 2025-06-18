@@ -178,7 +178,7 @@ class Start(BaseStrategy):
             "output_dir",
             os.getenv("EFI_OUTPUT_DIR")
         ) # NOTE: this is a local path or redundant w/ transportation subparameters?
-        params_dict["output_dict"] = Path(output_dir) / str(job_obj.id)
+        params_dict["output_dict"] = str(Path(output_dir) / str(job_obj.id))
 
         params_dict["efi_config"] = config_obj.get_parameter(
             "compute_dict",
@@ -223,14 +223,15 @@ class Start(BaseStrategy):
         )
 
         # develop the path to the nf pipeline script
-        params_dict["workflow_path"] = Path(
+        workflow_path = Path(
             config_obj.get_parameter(
                 "compute_dict",
                 "est_repo_path",
                 os.getenv("EST_REPO_PATH")
             ) # NOTE: this value is pointing to a file on the compute resource
         ) / "pipelines" / pipeline_list[0] / f"{pipeline_list[0]}.nf"
-
+        params_dict["workflow_path"] = str(workflow_path)
+        
         # step 4. Develop pipeline specific handling of parameters.
         if pipeline_list[0].lower() == "est":
             params_dict["import_mode"] = pipeline_list[1].lower()
