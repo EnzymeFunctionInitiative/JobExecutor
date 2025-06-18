@@ -60,8 +60,8 @@ class Start(BaseStrategy):
                 "output_dir",
                 "/tmp"
             )
-            from_destination = Path(output_dir) / job_obj.id
-            to_destination = Path(output_dir) / job_obj.id
+            from_destination = Path(output_dir) / str(job_obj.id)
+            to_destination = Path(output_dir) / str(job_obj.id)
         
         # make the working directories.
         from_destination.mkdir(parents=True, exist_ok=True)
@@ -376,8 +376,8 @@ class CheckStatus(BaseStrategy):
             if transport_strategy:
                 strat = transport_strategy.get("finished")
                 if strat:
-                    from_destination = Path(strat["destination1"]) / job_obj.id
-                    to_destination   = Path(strat["destination2"]) / job_obj.id
+                    from_destination = Path(strat["destination1"]) / str(job_obj.id)
+                    to_destination   = Path(strat["destination2"]) / str(job_obj.id)
             else:
                 # NOTE: this is gonna change if the `sacct -j` call changes
                 cwd = Path(proc_stdout.strip().split()[-1])
