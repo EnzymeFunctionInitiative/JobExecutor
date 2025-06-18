@@ -229,11 +229,11 @@ class Start(BaseStrategy):
                 "est_repo_path",
                 os.getenv("EST_REPO_PATH")
             ) # NOTE: this value is pointing to a file on the compute resource
-        ) / "pipelines" / pipeline[0] / f"{pipeline[0]}.nf"
+        ) / "pipelines" / pipeline_list[0] / f"{pipeline_list[0]}.nf"
 
         # step 4. Develop pipeline specific handling of parameters.
-        if pipeline[0].lower() == "est":
-            params_dict["import_mode"] = pipeline[1].lower()
+        if pipeline_list[0].lower() == "est":
+            params_dict["import_mode"] = pipeline_list[1].lower()
 
             # look at EST/lib/EFI/Import/Config/Filter.pm for the formatting of
             # members of the params' filter keyword...

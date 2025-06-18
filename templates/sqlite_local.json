@@ -12,7 +12,7 @@
 	"efi_db": "/path/to/the/db/file",
         "nf_config": "/path/to/the/nextflow/config/file",
 	"template_dir": "/path/to/dir/with/template/files",
-	"workflow_path": "/path/to/the/EST/repository",
+	"est_repo_path": "/path/to/the/EST/repository",
 	"submit_command": [
 		"date",
 		"sbatch batch.sh",
