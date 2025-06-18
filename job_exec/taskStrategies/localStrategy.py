@@ -73,7 +73,7 @@ class Start(BaseStrategy):
         # step 5. Parameter rendering.
         params_file_path = Path(from_destination) / "params.json"
         self.render_params(params_file_path)
-        self.params_dict["params_file"] = params_file_path
+        self.params_dict["params_file"] = str(params_file_path)
 
         # step 6. Command preparation.
         batch_file_path = Path(from_destination) / "run_efi_nextflow.sh"
@@ -88,7 +88,7 @@ class Start(BaseStrategy):
         # step 7. Transport files.
         if from_destination != to_destination:
             # get list of input files that need to be transferred
-            file_list = job_obj.get_input_files(from_destination)
+            file_list = job_obj.get_input_files()
             file_list.append(params_file_path)
             file_list.append(batch_file_path)
             
@@ -100,7 +100,7 @@ class Start(BaseStrategy):
             cmd = f"unzip {zip_file_path} -d {to_destination}"
             retcode, results = run_command(cmd)
             if retcode != 0:
-                raise results[0](f"Transportation failed.\n{job_obj}")
+                raise results(f"Transportation failed.\n{job_obj}")
             
         # step 8. Command execution.
         commands = config_obj.get_parameter(
@@ -113,7 +113,7 @@ class Start(BaseStrategy):
 
             retcode, results = run_command(cmd)
             if retcode != 0:
-                raise results[0](f"Command {cmd} failed.\n{job_obj}")
+                raise results(f"Command {cmd} failed.\n{job_obj}")
             
             # no error occurred so process the stdout and stderr
             proc_stdout, proc_stderr = results
@@ -178,7 +178,7 @@ class Start(BaseStrategy):
             "output_dir",
             os.getenv("EFI_OUTPUT_DIR")
         ) # NOTE: this is a local path or redundant w/ transportation subparameters?
-        params_dict["output_dict"] = str(Path(output_dir) / str(job_obj.id))
+        params_dict["output_dir"] = str(Path(output_dir) / str(job_obj.id))
 
         params_dict["efi_config"] = config_obj.get_parameter(
             "compute_dict",
@@ -267,7 +267,7 @@ class Start(BaseStrategy):
                 val = params_dict.get(key)
                 if val:
                     # add the correctly formatted string to the "filter" list
-                    params_dict["filter"].append(f'"{keyword}={val}"')
+                    params_dict["filter"].append(f"{keyword}={val}")
                     # remove the original key from the params_dict so it isn't
                     # written to the params.json file
                     params_dict.pop(key)
@@ -296,14 +296,14 @@ class Start(BaseStrategy):
         with open(params_file_path,'w') as out:
             json.dump(self.params_dict, out, indent=4)
 
-    def render_batch(template_file_path: Path, batch_file_path: Path):
+    def render_batch(self, template_file_path: Path, batch_file_path: Path):
         """
         """
         env = Environment(
-            loader = FilSystemLoader(template_file_path.parent), 
+            loader = FileSystemLoader(template_file_path.parent), 
             autoescape=select_autoescape()
         )
-        command_template = env.get_template(template_file_path)
+        command_template = env.get_template(template_file_path.name)
         command_str = command_template.render(**self.params_dict)
         with open(batch_file_path, "w") as batch:
             batch.write(command_str)
@@ -339,7 +339,7 @@ class CheckStatus(BaseStrategy):
         retcode, results = run_command(cmd)
         # if check_status_cmd failed, 
         if retcode != 0:
-            raise results[0](f"CheckStatus task failed.\n{job_obj}")
+            raise results(f"CheckStatus task failed.\n{job_obj}")
         # otherwise, gather the std out and err strings
         proc_stdout, proc_stderr = results
         # assuming the below command is followed, the state/status is the zeroth
@@ -400,7 +400,7 @@ class CheckStatus(BaseStrategy):
             cmd = f"unzip {zip_file_path} -d {to_destination}"
             retcode, results = run_command(cmd)
             if retcode != 0:
-                raise results[0](f"Transportation failed.\n{job_obj}")
+                raise results(f"Transportation failed.\n{job_obj}")
 
             # fill the update_dict with table values to be updated
             update_dict["results"] = [to_destination / file for file in file_list]

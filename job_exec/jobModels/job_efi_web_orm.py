@@ -101,14 +101,14 @@ class Job(Base):
         Create a list of attribute names that map to input files that require
         specialized handling before a job can be started. 
         """
-        pass
+        return []
 
     def get_output_files(self) -> List[str]:
         """
         Create a list of attribute names that map to output files that require
         specialized handling once a job is finished. 
         """
-        pass
+        return []
 
 ################################################################################
 # Mixin Column Classes
