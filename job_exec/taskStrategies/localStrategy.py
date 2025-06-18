@@ -52,31 +52,31 @@ class Start(BaseStrategy):
         if transport_strategy:
             strat = transport_strategy.get("new")
             if strat:
-                self.from_destination= Path(strat["destination1"]) / job_obj.id
-                self.to_destination  = Path(strat["destination2"]) / job_obj.id
+                from_destination= Path(strat["destination1"]) / str(job_obj.id)
+                to_destination  = Path(strat["destination2"]) / str(job_obj.id)
         else:
             output_dir = config_obj.get_parameter(
                 "compute_dict",
                 "output_dir",
                 "/tmp"
             )
-            self.from_destination = Path(output_dir) / job_obj.id
-            self.to_destination = Path(output_dir) / job_obj.id
+            from_destination = Path(output_dir) / job_obj.id
+            to_destination = Path(output_dir) / job_obj.id
         
         # make the working directories.
-        self.from_destination.mkdir(parents=True, exist_ok=True)
-        self.to_destination.mkdir(parents=True, exist_ok=True)
+        from_destination.mkdir(parents=True, exist_ok=True)
+        to_destination.mkdir(parents=True, exist_ok=True)
 
         # steps 2-4. Parameter handling.
         self.params_dict = self.prepare_params(job_obj, config_obj, pipeline)
 
         # step 5. Parameter rendering.
-        params_file_path = Path(self.from_destination) / "params.json"
+        params_file_path = Path(from_destination) / "params.json"
         self.render_params(params_file_path)
         self.params_dict["params_file"] = params_file_path
 
         # step 6. Command preparation.
-        batch_file_path = Path(self.from_destination) / "run_efi_nextflow.sh"
+        batch_file_path = Path(from_destination) / "run_efi_nextflow.sh"
         batch_file_template = Path(
             config_obj.get_parameter(
                 "compute_dict",
@@ -86,18 +86,18 @@ class Start(BaseStrategy):
         self.render_batch(batch_file_template, batch_file_path)
        
         # step 7. Transport files.
-        if self.from_destination != self.to_destination:
+        if from_destination != to_destination:
             # get list of input files that need to be transferred
-            file_list = job_obj.get_input_files(self.from_destination)
+            file_list = job_obj.get_input_files(from_destination)
             file_list.append(params_file_path)
             file_list.append(batch_file_path)
             
             # zip up files
-            zip_file_path = self.from_destination / "input_files.zip"
+            zip_file_path = from_destination / "input_files.zip"
             zip_files(zip_file_path, file_list)
 
             # run the transfer command; in the local sense, this is kinda dumb
-            cmd = f"unzip {zip_file_path} -d {self.to_destination}"
+            cmd = f"unzip {zip_file_path} -d {to_destination}"
             retcode, results = run_command(cmd)
             if retcode != 0:
                 raise results[0](f"Transportation failed.\n{job_obj}")
