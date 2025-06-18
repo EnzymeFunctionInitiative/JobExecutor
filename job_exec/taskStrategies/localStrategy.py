@@ -178,7 +178,7 @@ class Start(BaseStrategy):
             "final_output_dir",
             os.getenv("EFI_OUTPUT_DIR")
         ) # NOTE: this is a local path or redundant w/ transportation subparameters?
-        params_dict["output_dict"] = Path(output_dir) / params_dict["job_id"]
+        params_dict["output_dict"] = Path(output_dir) / str(job_obj.id)
 
         params_dict["efi_config"] = config_obj.get_parameter(
             "compute_dict",
