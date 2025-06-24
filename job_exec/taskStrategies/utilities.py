@@ -34,7 +34,7 @@ def zip_files(zip_file_path: Path, file_list: List) -> Path:
         raise
 
 
-def run_command(cmd: str):
+def run_command(cmd: str, working_dir: str = None):
     """
     Wrapper function to handle the subprocess.Popen call. 
 
@@ -43,6 +43,9 @@ def run_command(cmd: str):
         cmd
             str, full string of the command to be run. Will be separated into
             args list internally.
+        working_dir
+            str, default None. If not None, the cmd string will be submitted 
+            from the path associated with this input argument.
 
     Returns
     -------
@@ -63,13 +66,22 @@ def run_command(cmd: str):
                 being raised
     """
     try:
+        # check if the provided working_dir exists
+        if not working_dir and not Path(working_dir).is_dir():
+            return 1, (
+                RuntimeError(
+                    f"Specified working directory ({working_dir}) does not" 
+                    + f" exist."
+                ),
+            )
         # run the process
         process = subprocess.Popen(
             cmd.split(),
             stdout = subprocess.PIPE,
             stderr = subprocess.PIPE,
-            shell = True,
+            cwd=working_dir,
         )
+            #shell = True,
         stdout, stderr = process.communicate()
         retcode = process.returncode
         

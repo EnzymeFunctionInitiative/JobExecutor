@@ -17,7 +17,8 @@
 		"date",
 		"sbatch batch.sh",
 		"date"
-	]
+	],
+	"check_status_command","sacct -j {_id} -X --format=State,JobID,ExitCode,WorkDir%50 --noheader"
     },
     "transportation": {
 	"transport_cmd": "mv",

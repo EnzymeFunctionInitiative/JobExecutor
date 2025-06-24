@@ -76,13 +76,13 @@ class Start(BaseStrategy):
         self.params_dict["params_file"] = str(params_file_path)
 
         # step 6. Command preparation.
-        batch_file_path = Path(from_destination) / "run_efi_nextflow.sh"
+        batch_file_path = Path(from_destination) / "batch.sh"
         batch_file_template = Path(
             config_obj.get_parameter(
                 "compute_dict",
                 "template_dir"
             )
-        ) / "run_efi_nextflow.sh.jinja"
+        ) / "run_efi_nextflow.sh.jinja"     # NOTE: hardcoded file name should be changed to be pointed at via the config file
         self.render_batch(batch_file_template, batch_file_path)
        
         # step 7. Transport files.
@@ -330,9 +330,9 @@ class CheckStatus(BaseStrategy):
         # step 2. Command preparation. The "check_status_cmd" parameter in the
         # config_obj's compute_dict attribute is an f-string with the "{jobid}"
         # placeholder.
-        cmd = config_obj.get_attribute(
+        cmd = config_obj.get_parameter(
             "compute_dict",
-            "check_status_cmd"
+            "check_status_command"
         ).format(jobid = _id)
         
         # step 3. Run the check_status_cmd
