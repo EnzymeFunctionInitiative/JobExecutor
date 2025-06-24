@@ -67,13 +67,14 @@ def run_command(cmd: str, working_dir: str = None):
     """
     try:
         # check if the provided working_dir exists
-        if not working_dir and not Path(working_dir).is_dir():
-            return 1, (
-                RuntimeError(
-                    f"Specified working directory ({working_dir}) does not" 
-                    + f" exist."
-                ),
-            )
+        if not working_dir:
+            if not Path(working_dir).is_dir():
+                return 1, (
+                    RuntimeError(
+                        f"Specified working directory ({working_dir}) does not"
+                        + f" exist."
+                    ),
+                )
         # run the process
         process = subprocess.Popen(
             cmd.split(),
@@ -85,8 +86,8 @@ def run_command(cmd: str, working_dir: str = None):
         stdout, stderr = process.communicate()
         retcode = process.returncode
         
-        # if retcode != 0, then the process failed
-        if retcode:
+        # if the process failed
+        if retcode != 0:
             return retcode, (
                 RuntimeError(
                     f"Command failed: {cmd}\n{stderr.decode()}"
@@ -98,6 +99,6 @@ def run_command(cmd: str, working_dir: str = None):
             stderr.decode()
         )
 
-    except Exception as e:
+    except SubprocessError as e:
         return 1, (e,)
 

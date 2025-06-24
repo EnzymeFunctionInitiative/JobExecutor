@@ -98,9 +98,10 @@ class Start(BaseStrategy):
 
             # run the transfer command; in the local sense, this is kinda dumb
             cmd = f"unzip {zip_file_path} -d {to_destination}"
-            retcode, results = run_command(cmd)
+            retcode, results = run_command(cmd, working_dir = from_destination)
             if retcode != 0:
-                raise results(f"Transportation failed.\n{job_obj}")
+                print(f"Transportation failed.\n{job_obj}")
+                raise results[0]
             
         # step 8. Command execution.
         commands = config_obj.get_parameter(
@@ -111,9 +112,10 @@ class Start(BaseStrategy):
         for i, cmd in enumerate(commands):
             print(i, cmd)
 
-            retcode, results = run_command(cmd)
+            retcode, results = run_command(cmd, working_dir = to_destination)
             if retcode != 0:
-                raise results(f"Command {cmd} failed.\n{job_obj}")
+                print(f"Command {cmd} failed.\n{job_obj}")
+                raise results[0]
             
             # no error occurred so process the stdout and stderr
             proc_stdout, proc_stderr = results
@@ -340,11 +342,13 @@ class CheckStatus(BaseStrategy):
                   + "parameter is given in the config file.")
             raise
         
-        # step 3. Run the check_status_cmd
+        # step 3. Run the check_status_command, doesn't matter what the working
+        # directory is.
         retcode, results = run_command(cmd)
         # if check_status_cmd failed, 
         if retcode != 0:
-            raise results(f"CheckStatus task failed.\n{job_obj}")
+            print(f"CheckStatus task failed.\n{job_obj}")
+            raise results[0]
         # otherwise, gather the std out and err strings
         proc_stdout, proc_stderr = results
         # assuming the below command is followed, the state/status is the zeroth
@@ -356,11 +360,14 @@ class CheckStatus(BaseStrategy):
         
         # Step 4. Handle the different job states. 
         if job_status in job_states["running"]:
+            print(f"{job_obj} is incomplete.")
             return retcode, {"status": Status.RUNNING}
         elif job_status in job_states["failed"]:
+            print(f"{job_obj} failed.")
             return retcode, {"status": Status.FAILED}
         # Step 4 cont'd. Finished job may or may not require a transport event.
         elif job_status in job_states["finished"]:
+            print(f"{job_obj} is finished.")
             update_dict = {"status": Status.FINISHED}
             # get Job's class attribute containing file names to be gathered 
             # as results.
@@ -403,9 +410,10 @@ class CheckStatus(BaseStrategy):
             # transfer the zip
             to_destination.mkdir(parents=True, exist_ok=True)
             cmd = f"unzip {zip_file_path} -d {to_destination}"
-            retcode, results = run_command(cmd)
+            retcode, results = run_command(cmd, working_dir = from_destination)
             if retcode != 0:
-                raise results(f"Transportation failed.\n{job_obj}")
+                print(f"Transportation failed.\n{job_obj}")
+                raise results[0]
 
             # fill the update_dict with table values to be updated
             update_dict["results"] = [to_destination / file for file in file_list]
