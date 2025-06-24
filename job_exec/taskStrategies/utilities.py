@@ -34,7 +34,7 @@ def zip_files(zip_file_path: Path, file_list: List) -> Path:
         raise
 
 
-def run_command(cmd: str, working_dir: str = None):
+def run_command(cmd: str, working_dir: str | Path = None):
     """
     Wrapper function to handle the subprocess.Popen call. 
 
@@ -44,8 +44,8 @@ def run_command(cmd: str, working_dir: str = None):
             str, full string of the command to be run. Will be separated into
             args list internally.
         working_dir
-            str, default None. If not None, the cmd string will be submitted 
-            from the path associated with this input argument.
+            str or Path, default None. If not None, the cmd string will be
+            submitted from the path associated with this input argument.
 
     Returns
     -------
@@ -65,16 +65,18 @@ def run_command(cmd: str, working_dir: str = None):
                 Error obj, the exception object associated with the error
                 being raised
     """
+    # check if working_dir is not None
+    if working_dir:
+        # check to see if it exists
+        if not Path(working_dir).is_dir():
+            # it doesn't exist so raise an Error
+            return 1, (
+                RuntimeError(
+                    f"Specified working directory ({working_dir}) does not"
+                    + f" exist."
+                ),
+            )
     try:
-        # check if the provided working_dir exists
-        if not working_dir:
-            if not Path(working_dir).is_dir():
-                return 1, (
-                    RuntimeError(
-                        f"Specified working directory ({working_dir}) does not"
-                        + f" exist."
-                    ),
-                )
         # run the process
         process = subprocess.Popen(
             cmd.split(),
@@ -99,6 +101,6 @@ def run_command(cmd: str, working_dir: str = None):
             stderr.decode()
         )
 
-    except SubprocessError as e:
+    except subprocess.SubprocessError as e:
         return 1, (e,)
 

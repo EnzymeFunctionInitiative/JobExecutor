@@ -371,7 +371,7 @@ class CheckStatus(BaseStrategy):
             update_dict = {"status": Status.FINISHED}
             # get Job's class attribute containing file names to be gathered 
             # as results.
-            file_list = job_obj.get_result_files()
+            file_list = job_obj.get_output_files()
             
             ## determine the transportation command to be used.
             #transport_cmd = config_obj.get_parameter(
