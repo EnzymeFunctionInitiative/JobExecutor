@@ -60,6 +60,7 @@ class Start(BaseStrategy):
                 "output_dir",
                 "/tmp"
             )
+            # required to still define these to continue on
             from_destination = Path(output_dir) / str(job_obj.id)
             to_destination = Path(output_dir) / str(job_obj.id)
         
@@ -370,8 +371,12 @@ class CheckStatus(BaseStrategy):
             print(f"{job_obj} is finished.")
             update_dict = {"status": Status.FINISHED}
             # get Job's class attribute containing file names to be gathered 
-            # as results.
+            # as results. This does not check for existence of the files.
             file_list = job_obj.get_output_files()
+            # hardcoded files expected to be created by the batch script
+            file_list.append("FINISHED")
+            file_list.append("nextflow.stderr")
+            file_list.append("nextflow.stdout")
             
             ## determine the transportation command to be used.
             #transport_cmd = config_obj.get_parameter(
@@ -402,20 +407,27 @@ class CheckStatus(BaseStrategy):
             
             # complete the from_destination paths to include the file names
             from_list = [from_destination / file for file in file_list]
+            # only include files that exist.
+            from_list = [file for file in from_list if file.is_file()]
             
-            # zip those files up
-            zip_file_path = from_destination / "result_files.zip"
-            zip_files(zip_file_path, from_list)
+            # only zip and unzip if the file list is not empty
+            if from_list:
+                # zip those files up
+                zip_file_path = from_destination / "result_files.zip"
+                zip_files(zip_file_path, from_list)
 
-            # transfer the zip
-            to_destination.mkdir(parents=True, exist_ok=True)
-            cmd = f"unzip {zip_file_path} -d {to_destination}"
-            retcode, results = run_command(cmd, working_dir = from_destination)
-            if retcode != 0:
-                print(f"Transportation failed.\n{job_obj}")
-                raise results[0]
+                # transfer the zip
+                to_destination.mkdir(parents=True, exist_ok=True)
+                
+                # unzip to the to_destination as the transportation strategy
+                cmd = f"unzip {zip_file_path} -d {to_destination}"
+                retcode, results = run_command(cmd, working_dir = from_destination)
+                if retcode != 0:
+                    print(f"Transportation failed.\n{job_obj}")
+                    raise results[0]
 
             # fill the update_dict with table values to be updated
+            # NOTE: this is gonna change once result columns get figured out
             update_dict["results"] = [to_destination / file for file in file_list]
 
             return 0, updates_dict
