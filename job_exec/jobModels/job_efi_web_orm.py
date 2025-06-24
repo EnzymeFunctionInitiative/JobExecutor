@@ -67,7 +67,7 @@ class Job(Base):
             completed_string = f"timeStarted='{self.timeStarted}'"
         else:
             completed_string = ""
-        return (f"<self.__class__.__name__(id={self.id},"
+        return (f"<{self.__class__.__name__}(id={self.id},"
                 + f" status='{self.status}',"
                 + f" job_type='{self.job_type}',"
                 + f" timeCreated='{self.timeCreated}'"
