@@ -108,7 +108,7 @@ class Start(BaseStrategy):
             "submit_command"
         )
         retcode = 0
-        for i, cmd in commands:
+        for i, cmd in enumerate(commands):
             print(i, cmd)
 
             retcode, results = run_command(cmd)

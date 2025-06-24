@@ -70,22 +70,22 @@ def run_command(cmd: str):
             stderr = subprocess.PIPE,
             shell = True,
         )
-        comms = process.communicate()
+        stdout, stderr = process.communicate()
         retcode = process.returncode
         
         # if retcode != 0, then the process failed
         if retcode:
             return retcode, (
                 RuntimeError(
-                    f"Command failed: {cmd}\n{comms.stderr.decode()}"
-                )
+                    f"Command failed: {cmd}\n{stderr.decode()}"
+                ),
             )
         
         return process.returncode, (
-            comms.stdout.decode(), 
-            comms.stderr.decode()
+            stdout.decode(), 
+            stderr.decode()
         )
 
     except Exception as e:
-        return 1, (e)
+        return 1, (e,)
 
