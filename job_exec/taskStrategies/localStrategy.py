@@ -327,13 +327,18 @@ class CheckStatus(BaseStrategy):
         if not _id:
             return 1, {"status": Status.FAILED}
 
-        # step 2. Command preparation. The "check_status_cmd" parameter in the
-        # config_obj's compute_dict attribute is an f-string with the "{jobid}"
-        # placeholder.
-        cmd = config_obj.get_parameter(
-            "compute_dict",
-            "check_status_command"
-        ).format(jobid = _id)
+        # step 2. Command preparation. The "check_status_command" parameter in 
+        # the config_obj's compute_dict attribute is an f-string with a single
+        # placeholder for the schedulerJobId value.
+        try:
+            cmd = config_obj.get_parameter(
+                "compute_dict",
+                "check_status_command"
+            ).format(_id)
+        except KeyError as e:
+            print('No or an improperly formatted "check_status_command"' 
+                  + "parameter is given in the config file.")
+            raise
         
         # step 3. Run the check_status_cmd
         retcode, results = run_command(cmd)
