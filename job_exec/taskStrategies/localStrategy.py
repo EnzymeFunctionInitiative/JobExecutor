@@ -402,7 +402,7 @@ class CheckStatus(BaseStrategy):
                 # NOTE: this is gonna change once the columns for results is 
                 # figured out
                 # NOTE: NO CHECKS DONE FOR FILES EXISTING
-                updates_dict["results"] = [cwd / file for file in file_list]
+                updates_dict["results"] = ",".join([cwd / file for file in file_list])
                 return 0, updates_dict
             
             # complete the from_destination paths to include the file names
@@ -428,7 +428,7 @@ class CheckStatus(BaseStrategy):
 
             # fill the updates_dict with table values to be updated
             # NOTE: this is gonna change once result columns get figured out
-            updates_dict["results"] = [to_destination / file for file in file_list]
+            updates_dict["results"] = ",".join([to_destination / file for file in file_list])
 
             return 0, updates_dict
 
