@@ -369,7 +369,7 @@ class CheckStatus(BaseStrategy):
         # Step 4 cont'd. Finished job may or may not require a transport event.
         elif job_status in job_states["finished"]:
             print(f"{job_obj} is finished.")
-            update_dict = {"status": Status.FINISHED}
+            updates_dict = {"status": Status.FINISHED}
             # get Job's class attribute containing file names to be gathered 
             # as results. This does not check for existence of the files.
             file_list = job_obj.get_output_files()
@@ -402,8 +402,8 @@ class CheckStatus(BaseStrategy):
                 # NOTE: this is gonna change once the columns for results is 
                 # figured out
                 # NOTE: NO CHECKS DONE FOR FILES EXISTING
-                update_dict["results"] = [cwd / file for file in file_list]
-                return 0, update_dict
+                updates_dict["results"] = [cwd / file for file in file_list]
+                return 0, updates_dict
             
             # complete the from_destination paths to include the file names
             from_list = [from_destination / file for file in file_list]
@@ -426,9 +426,9 @@ class CheckStatus(BaseStrategy):
                     print(f"Transportation failed.\n{job_obj}")
                     raise results[0]
 
-            # fill the update_dict with table values to be updated
+            # fill the updates_dict with table values to be updated
             # NOTE: this is gonna change once result columns get figured out
-            update_dict["results"] = [to_destination / file for file in file_list]
+            updates_dict["results"] = [to_destination / file for file in file_list]
 
             return 0, updates_dict
 
