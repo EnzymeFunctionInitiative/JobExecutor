@@ -38,15 +38,31 @@ class Operator:
         NOTE: need to update this method if new tasks are implemented
         """
         try:
-            module = importlib.import_module(f"taskStrategies.{self.mode}Strategy")
+            module = importlib.import_module(f"taskStrategies.start")
             self.StartStrategy = getattr(module, "Start")
-            self.CheckStatusStrategy = getattr(module, "CheckStatus")
-            #self.TransferStrategy = getattr(module, "Transfer")
-            #self.ArchiveStrategy = getattr(module, "Archive")
-            print(f"Using {module.__name__} as the source of task strategies.")
+            print(f"Using {module.__name__} as the source of Start strategy.")
         except Exception as e:
-            print(f"Importing the taskStrategies.{self.mode} submodule failed.\n {e}")
+            print(f"Importing the start taskStrategies submodule failed.\n {e}")
             raise
+            
+        try:
+            module = importlib.import_module(f"taskStrategies.check_status")
+            self.CheckStatusStrategy = getattr(module, "CheckStatus")
+            print(f"Using {module.__name__} as the source of CheckStatus" 
+                + " strategy.")
+        except Exception as e:
+            print(f"Importing the check_status taskStrategies submodule failed."
+                + f"\n {e}")
+            raise
+            
+        #try:
+        #    module = importlib.import_module(f"taskStrategies.archive")
+        #    self.ArchiveStrategy = getattr(module, "Archive")
+        #    print(f"Using {module.__name__} as the source of Archive strategy.")
+        #except Exception as e:
+        #    print(f"Importing the archive taskStrategies submodule failed." 
+        #        + f"\n {e}")
+        #    raise
 
     ############################################################################
 
