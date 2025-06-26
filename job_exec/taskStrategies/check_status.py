@@ -129,10 +129,10 @@ class CheckStatus(BaseStrategy):
             # NOTE: this is gonna change once result columns get figured out
             updates_dict["results"] = ",".join([to_destination / file for file in file_list])
 
-            # NOTE: Should the job table subclasses have their own 
+            # NOTE: the job table subclasses need to have their own 
             # apply_update() methods that take in the file list (or other 
             # information) and parse those files into key information that 
-            # needs to go into the Job table?
+            # goes into the Job table...
 
             return 0, updates_dict
 
