@@ -22,24 +22,45 @@ class Start(BaseStrategy):
             config_obj: BaseConfig
         ) -> Tuple[str, Dict]:
         """
+        The job_obj, config_obj, and environment variables (optional) contain
+        all necessary information for running the Start task for the given
+        job_obj. 
+        
+        This method covers many steps: 
+        1) Determine the efi nf (sub)pipeline.
+        2) Given entries in the config file, determine the strategies to be.
+           used for transportation and submission/execution.
+        3) Gather and create destinations for transportation.
+        4) Prepare the parameters.
+           a) from the job object
+           b) from the config object
+           c) prepare (sub)pipeline-specific input parameters
+        5) Write parameters to a file.
+        6) Write the submission script to file.
+        7) Apply the transportation strategy to the input files.
+        8) Apply the submission/execution strategy to the input files.
+        9) Fill out the updates_dict and return.
+        
+        Arguments
+        ---------
+            job_obj
+                Job type, attributes filled with necessary input parameters
+                to be used to prepare for the job as well as act as input
+                parameters for the nextflow pipeline.
+            config_obj
+                BaseConfig type, has attributes filled with executor
+                configuration parameters.
+
+        Returns
+        -------
+            retcode
+                int, 0 for successful completion of the Start task. Non-zero
+                for a failure.
+            updates_dict
+                dictionary, filled with keys:val pairs to be used when
+                updating the job_obj in the job table.
+
         """
-        ## OUTLINE:
-        # - the job_obj, config_obj, and possibly environment variables contain
-        #   all necessary information for running this task. 
-        # 1) Determine the efi nf (sub)pipeline.
-        # 2) Given entries in the config file, determine the strategies to be
-        #    used for transportation and submission/execution.
-        # 3) Gather and create destinations for transportation.
-        # 4) Prepare the parameters
-        #    a) from the job object
-        #    b) from the config object
-        #    c) prepare (sub)pipeline-specific input parameters
-        # 5) Write parameters to a file.
-        # 6) Write the submission script to file.
-        # 7) Apply the transportation strategy to the input files.
-        # 8) Apply the submission/execution strategy to the input files. 
-        # 9) Fill out the updates_dict and return.
-       
         # step 1. Determine the type of Job to be performed. 
         pipeline = job_obj.pipeline.split(":")
        
@@ -128,12 +149,22 @@ class Start(BaseStrategy):
                 raise results[0]
 
         # step 8. Command execution.
+        # NOTE: need further development
         retcode, results = execution_strategy.run(
             to_destination, 
         )
+        # need to figure this out but schedulerJobId needs to always be returned...
         if len(results) > 1:
             schedulerJobId = results[0]
-        
+       
+        # NOTE: for each execution_strategy, a list of files should be returned
+        # that should be checked for and transferred upon a successful
+        # completion. Add this list to an attribute associated with the job_obj?
+        # to implement this, update the Job class' get_output_files() method to
+        # grab this attribute's list of files and then append to it based on the
+        # subclass's columns that are results/files focused...
+
+
         #commands = config_obj.get_parameter(
         #    "compute_dict",
         #    "submit_command"
