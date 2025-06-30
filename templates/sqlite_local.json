@@ -15,7 +15,8 @@
 	"est_repo_path": "/path/to/the/EST/repository"
     },
     "transportation": {
-	}
+	"destination1": "/path/to/dir1",
+	"destination2": "/path/to/dir2"
     },
     "strategies": {
         "preparation_strategy_file": "/some/path/here.py",
