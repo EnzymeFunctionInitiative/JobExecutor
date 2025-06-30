@@ -106,9 +106,11 @@ class SQLStrategy(BaseDataStrategy):
         """
         job_table_module = self.config.get("table_def")
         if job_table_module:
+            print(f"Loading Job table structure from {job_table_module}")
             module = importlib.import_module(job_table_module)
             return getattr(module, "Base"), getattr(module, "Job")
         else:
+            print(f"Loading Job table structure from jobModels.job_dummy_orm")
             from jobModels.job_dummy_orm import Base, Job
             return Base, Job
 
